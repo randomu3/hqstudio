@@ -1,3 +1,11 @@
+## 1.0.0 (2025-12-20)
+
+
+### 🚀 Новые возможности
+
+* добавлен CI/CD и подготовка к релизу ([249d0cc](https://github.com/randomu3/hqstudio/commit/249d0ccc9368ec5e49ba0d877b5bdd9212ea63ce))
+* добавлены тесты, клавиатурная навигация и иконки ([042fb1e](https://github.com/randomu3/hqstudio/commit/042fb1e13bcd423cb1ccad3541598fdd79959bb6))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
