@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HQStudio.API.Data;
 using HQStudio.API.Models;
+using System.Security.Claims;
 
 namespace HQStudio.API.Controllers;
 
@@ -16,13 +17,22 @@ public class OrdersController : ControllerBase
     public OrdersController(AppDbContext db) => _db = db;
 
     [HttpGet]
-    public async Task<ActionResult<List<Order>>> GetAll([FromQuery] OrderStatus? status = null, [FromQuery] int? limit = null)
+    public async Task<ActionResult<List<Order>>> GetAll(
+        [FromQuery] OrderStatus? status = null, 
+        [FromQuery] int? limit = null,
+        [FromQuery] bool includeDeleted = false)
     {
         var query = _db.Orders
             .Include(o => o.Client)
             .Include(o => o.OrderServices)
             .ThenInclude(os => os.Service)
             .AsQueryable();
+
+        // По умолчанию не показываем удалённые заказы
+        if (!includeDeleted)
+        {
+            query = query.Where(o => !o.IsDeleted);
+        }
 
         if (status.HasValue) query = query.Where(o => o.Status == status);
 
@@ -100,13 +110,62 @@ public class OrdersController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Soft delete - помечает заказ как удалённый, но не удаляет из базы
+    /// </summary>
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var order = await _db.Orders.FindAsync(id);
         if (order == null) return NotFound();
+        
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        
+        // Soft delete - помечаем как удалённый
+        order.IsDeleted = true;
+        order.DeletedAt = DateTime.UtcNow;
+        order.DeletedByUserId = userId;
+        
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Восстановление удалённого заказа
+    /// </summary>
+    [HttpPost("{id}/restore")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Restore(int id)
+    {
+        var order = await _db.Orders.FindAsync(id);
+        if (order == null) return NotFound();
+        
+        order.IsDeleted = false;
+        order.DeletedAt = null;
+        order.DeletedByUserId = null;
+        
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Полное удаление заказа (только для разработчиков)
+    /// </summary>
+    [HttpDelete("{id}/permanent")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> PermanentDelete(int id)
+    {
+        var order = await _db.Orders
+            .Include(o => o.OrderServices)
+            .FirstOrDefaultAsync(o => o.Id == id);
+            
+        if (order == null) return NotFound();
+        
+        // Удаляем связанные услуги
+        _db.OrderServices.RemoveRange(order.OrderServices);
         _db.Orders.Remove(order);
+        
         await _db.SaveChangesAsync();
         return NoContent();
     }

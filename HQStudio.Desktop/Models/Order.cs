@@ -15,8 +15,15 @@ namespace HQStudio.Models
         public int? AssignedUserId { get; set; }
         public User? AssignedUser { get; set; }
         
+        // Для отображения имени клиента без загрузки полного объекта
+        public string ClientName { get; set; } = string.Empty;
+        
         public string ServicesDisplay => Services.Any() 
             ? string.Join(", ", Services.Select(s => s.Name)) 
             : "Не указаны";
+            
+        public string ClientDisplay => !string.IsNullOrEmpty(ClientName) 
+            ? ClientName 
+            : Client?.Name ?? "Неизвестный";
     }
 }
