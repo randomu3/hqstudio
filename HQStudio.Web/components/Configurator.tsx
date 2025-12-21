@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, ChevronLeft, Check, Sparkles } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check, Sparkles, Loader2 } from 'lucide-react'
+import { api } from '@/lib/api'
 
 const STEPS = [
   {
@@ -19,6 +20,11 @@ const STEPS = [
     id: 'services',
     title: 'Выберите услуги',
     options: ['Шумоизоляция', 'Антихром', 'Доводчики', 'Подсветка Ambient']
+  },
+  {
+    id: 'contact',
+    title: 'Ваши контакты',
+    options: []
   }
 ]
 
@@ -26,12 +32,13 @@ export default function Configurator() {
   const [currentStep, setCurrentStep] = useState(0)
   const [selections, setSelections] = useState<Record<string, string | string[]>>({})
   const [isFinished, setIsFinished] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [contactData, setContactData] = useState({ name: '', phone: '' })
 
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1)
-    } else {
-      setIsFinished(true)
     }
   }
 
@@ -50,6 +57,38 @@ export default function Configurator() {
     } else {
       setSelections({ ...selections, [stepId]: option })
       setTimeout(handleNext, 400)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!contactData.name.trim() || !contactData.phone.trim()) {
+      setSubmitError('Заполните имя и телефон')
+      return
+    }
+
+    setIsSubmitting(true)
+    setSubmitError('')
+
+    const message = [
+      `Автомобиль: ${selections.type || 'Не указан'}`,
+      `Цель: ${selections.goal || 'Не указана'}`,
+      `Услуги: ${Array.isArray(selections.services) ? selections.services.join(', ') : 'Не выбраны'}`
+    ].join('\n')
+
+    const result = await api.callbacks.create({
+      name: contactData.name,
+      phone: contactData.phone,
+      message,
+      source: 'Website',
+      sourceDetails: 'Консьерж-сервис (конфигуратор)'
+    })
+
+    setIsSubmitting(false)
+
+    if (result.error) {
+      setSubmitError(result.error)
+    } else {
+      setIsFinished(true)
     }
   }
 
@@ -82,26 +121,54 @@ export default function Configurator() {
 
                 <h3 className="text-3xl font-light mb-12">{STEPS[currentStep].title}</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {STEPS[currentStep].options.map((option) => {
-                    const isSelected = Array.isArray(selections[STEPS[currentStep].id]) 
-                      ? (selections[STEPS[currentStep].id] as string[]).includes(option)
-                      : selections[STEPS[currentStep].id] === option
-                    
-                    return (
-                      <button
-                        key={option}
-                        onClick={() => toggleOption(option)}
-                        className={`group p-6 text-left border transition-all duration-300 flex justify-between items-center ${
-                          isSelected ? 'border-black bg-black text-white' : 'border-neutral-200 hover:border-black'
-                        }`}
-                      >
-                        <span className="text-sm font-bold uppercase tracking-widest">{option}</span>
-                        {isSelected && <Check size={18} />}
-                      </button>
-                    )
-                  })}
-                </div>
+                {STEPS[currentStep].id === 'contact' ? (
+                  <div className="space-y-6 max-w-md">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Ваше имя</label>
+                      <input
+                        type="text"
+                        value={contactData.name}
+                        onChange={(e) => setContactData({ ...contactData, name: e.target.value })}
+                        placeholder="Иван"
+                        className="w-full px-4 py-4 border border-neutral-200 focus:border-black outline-none transition-colors text-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-widest text-neutral-500 mb-2">Телефон</label>
+                      <input
+                        type="tel"
+                        value={contactData.phone}
+                        onChange={(e) => setContactData({ ...contactData, phone: e.target.value })}
+                        placeholder="+7 (999) 123-45-67"
+                        className="w-full px-4 py-4 border border-neutral-200 focus:border-black outline-none transition-colors text-lg"
+                      />
+                    </div>
+                    {submitError && (
+                      <p className="text-red-500 text-sm">{submitError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {STEPS[currentStep].options.map((option) => {
+                      const isSelected = Array.isArray(selections[STEPS[currentStep].id]) 
+                        ? (selections[STEPS[currentStep].id] as string[]).includes(option)
+                        : selections[STEPS[currentStep].id] === option
+                      
+                      return (
+                        <button
+                          key={option}
+                          onClick={() => toggleOption(option)}
+                          className={`group p-6 text-left border transition-all duration-300 flex justify-between items-center ${
+                            isSelected ? 'border-black bg-black text-white' : 'border-neutral-200 hover:border-black'
+                          }`}
+                        >
+                          <span className="text-sm font-bold uppercase tracking-widest">{option}</span>
+                          {isSelected && <Check size={18} />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </motion.div>
             ) : (
               <motion.div
@@ -112,13 +179,10 @@ export default function Configurator() {
                 <div className="w-20 h-20 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-8">
                   <Sparkles size={32} />
                 </div>
-                <h3 className="text-3xl font-bold uppercase mb-4">Ваш выбор готов</h3>
+                <h3 className="text-3xl font-bold uppercase mb-4">Заявка отправлена!</h3>
                 <p className="text-neutral-500 mb-12 max-w-md mx-auto italic">
-                  Наши специалисты подготовят персональное предложение на основе ваших предпочтений.
+                  Наши специалисты свяжутся с вами в ближайшее время для обсуждения деталей.
                 </p>
-                <button className="px-12 py-5 bg-black text-white font-bold uppercase tracking-[0.2em] hover:bg-neutral-800 transition-colors">
-                  Отправить запрос эксперту
-                </button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -138,6 +202,23 @@ export default function Configurator() {
                   className="flex items-center gap-2 bg-black text-white px-8 py-3 text-xs font-bold uppercase tracking-widest"
                 >
                   Далее <ChevronRight size={16} />
+                </button>
+              )}
+              {STEPS[currentStep].id === 'contact' && (
+                <button 
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 bg-black text-white px-8 py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> Отправка...
+                    </>
+                  ) : (
+                    <>
+                      Отправить запрос <ChevronRight size={16} />
+                    </>
+                  )}
                 </button>
               )}
             </div>
