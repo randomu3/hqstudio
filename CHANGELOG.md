@@ -1,3 +1,10 @@
+## [1.7.0](https://github.com/randomu3/hqstudio/compare/v1.6.0...v1.7.0) (2025-12-21)
+
+
+### 🚀 Новые возможности
+
+* soft delete для заказов ([17eb26e](https://github.com/randomu3/hqstudio/commit/17eb26e0d72568a69e9e83ffad8290533e2a6c93))
+
 ## [1.6.0](https://github.com/randomu3/hqstudio/compare/v1.5.2...v1.6.0) (2025-12-21)
 
 
