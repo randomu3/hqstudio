@@ -82,3 +82,21 @@ ide scrollbar for horizontal scroll areas */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Custom select dropdown styling */
+select option {
+  background-color: #0a0a0a;
+  color: #f5f5f5;
+  padding: 12px 16px;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #1a1a1a;
+}
+
+/* Remove default focus outline and add custom */
+select:focus {
+  outline: none;
+}
