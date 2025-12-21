@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/randomu3/hqstudio/compare/v1.1.1...v1.1.2) (2025-12-21)
+
+
+### 🐛 Исправления
+
+* **web:** добавлен ESLint в зависимости ([7ed048c](https://github.com/randomu3/hqstudio/commit/7ed048cd663508fa7533f3ab7c587bf756b4feca))
+
 ## [1.1.1](https://github.com/randomu3/hqstudio/compare/v1.1.0...v1.1.1) (2025-12-21)
 
 
