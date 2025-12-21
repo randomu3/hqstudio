@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/randomu3/hqstudio/compare/v1.1.3...v1.1.4) (2025-12-21)
+
+
+### 🐛 Исправления
+
+* **web:** исправлена версия @vitest/coverage-v8 ([b033604](https://github.com/randomu3/hqstudio/commit/b0336049d15ecb744d46f0ceb75baad7f07d8d2e))
+
 ## [1.1.3](https://github.com/randomu3/hqstudio/compare/v1.1.2...v1.1.3) (2025-12-21)
 
 
