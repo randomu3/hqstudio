@@ -9,7 +9,6 @@ namespace HQStudio.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class SessionsController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -18,11 +17,26 @@ public class SessionsController : ControllerBase
 
     /// <summary>
     /// Начать сессию (при входе в приложение)
+    /// Desktop клиент передаёт userId в запросе
     /// </summary>
     [HttpPost("start")]
     public async Task<ActionResult<UserSession>> StartSession([FromBody] StartSessionRequest request)
     {
-        var userId = GetUserId();
+        var clientType = Request.Headers["X-Client-Type"].FirstOrDefault();
+        var isDesktopClient = clientType?.Equals("Desktop", StringComparison.OrdinalIgnoreCase) == true;
+        
+        int userId;
+        if (isDesktopClient)
+        {
+            // Desktop передаёт userId напрямую (без JWT)
+            userId = request.UserId ?? 1; // По умолчанию admin
+        }
+        else
+        {
+            if (!User.Identity?.IsAuthenticated == true)
+                return Unauthorized();
+            userId = GetUserId();
+        }
         
         // Закрываем предыдущие сессии с этого устройства
         var oldSessions = await _db.UserSessions
@@ -56,13 +70,21 @@ public class SessionsController : ControllerBase
     [HttpPost("heartbeat")]
     public async Task<ActionResult<HeartbeatResponse>> Heartbeat([FromBody] HeartbeatRequest request)
     {
-        var userId = GetUserId();
+        var clientType = Request.Headers["X-Client-Type"].FirstOrDefault();
+        var isDesktopClient = clientType?.Equals("Desktop", StringComparison.OrdinalIgnoreCase) == true;
         
-        var session = await _db.UserSessions
-            .FirstOrDefaultAsync(s => s.Id == request.SessionId && s.UserId == userId);
+        var session = await _db.UserSessions.FindAsync(request.SessionId);
 
         if (session == null)
             return NotFound(new { message = "Сессия не найдена" });
+
+        // Для не-Desktop проверяем что сессия принадлежит текущему пользователю
+        if (!isDesktopClient && User.Identity?.IsAuthenticated == true)
+        {
+            var userId = GetUserId();
+            if (session.UserId != userId)
+                return Forbid();
+        }
 
         session.LastHeartbeat = DateTime.UtcNow;
         session.Status = UserStatus.Online;
@@ -86,10 +108,7 @@ public class SessionsController : ControllerBase
     [HttpPost("end")]
     public async Task<IActionResult> EndSession([FromBody] EndSessionRequest request)
     {
-        var userId = GetUserId();
-        
-        var session = await _db.UserSessions
-            .FirstOrDefaultAsync(s => s.Id == request.SessionId && s.UserId == userId);
+        var session = await _db.UserSessions.FindAsync(request.SessionId);
 
         if (session == null)
             return NotFound();
@@ -149,7 +168,7 @@ public class SessionsController : ControllerBase
         int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 }
 
-public record StartSessionRequest(string DeviceId, string DeviceName);
+public record StartSessionRequest(string DeviceId, string DeviceName, int? UserId = null);
 public record HeartbeatRequest(int SessionId);
 public record EndSessionRequest(int SessionId);
 

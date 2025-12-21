@@ -351,11 +351,11 @@ namespace HQStudio.Services
         }
 
         // Sessions
-        public async Task<SessionResult?> StartSessionAsync(string deviceId, string deviceName)
+        public async Task<SessionResult?> StartSessionAsync(string deviceId, string deviceName, int? userId = null)
         {
             try
             {
-                var response = await _http.PostAsJsonAsync("/api/sessions/start", new { deviceId, deviceName });
+                var response = await _http.PostAsJsonAsync("/api/sessions/start", new { deviceId, deviceName, userId });
                 if (response.IsSuccessStatusCode)
                     return await response.Content.ReadFromJsonAsync<SessionResult>();
             }
