@@ -137,10 +137,11 @@ dotnet publish -c Release
 ### GitHub Actions Workflows
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `ci.yml` | Push/PR to main | Run tests for API, Web, Desktop |
+| `ci.yml` | Push/PR to main | Run tests for API, Web, Desktop + Codecov upload |
 | `release.yml` | Push to main | Semantic versioning, CHANGELOG, GitHub Release |
 | `pages.yml` | Push to main | Deploy Web to GitHub Pages |
 | `codeql.yml` | Push/PR/Weekly | Security analysis |
+| `dependabot-automerge.yml` | Dependabot PR | Auto-merge patch/minor updates |
 
 ### Semantic Release
 - Conventional Commits format required
@@ -152,6 +153,14 @@ dotnet publish -c Release
 - Weekly updates for npm (Web)
 - Weekly updates for NuGet (API, Desktop)
 - Monthly updates for GitHub Actions
+- **Auto-merge enabled** for patch/minor updates
+- Major updates ignored (Next.js, ESLint, Vitest)
+
+### Codecov
+- Coverage reports uploaded from CI
+- Flags: `api`, `web`
+- Badge in README shows coverage %
+- Config in `codecov.yml`
 
 ### Commit Message Format
 ```
@@ -176,5 +185,6 @@ Scopes: api, web, desktop, ci, deps
 
 ### Testing
 - API: xUnit + FluentAssertions + WebApplicationFactory
-- Web: Vitest
-- Desktop: xUnit (unit tests only in CI)
+- Web: Vitest + @vitest/coverage-v8
+- Desktop: xUnit (unit tests only in CI, integration tests skipped)
+- Coverage tracked via Codecov (~50% target)

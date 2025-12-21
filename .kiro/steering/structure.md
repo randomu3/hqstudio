@@ -10,7 +10,7 @@
 ├── HQStudio.API.Tests/     # API integration tests
 ├── docs/                   # Documentation (API.md, ARCHITECTURE.md)
 ├── .github/
-│   ├── workflows/          # CI/CD pipelines
+│   ├── workflows/          # CI/CD pipelines (ci, release, pages, codeql, dependabot-automerge)
 │   ├── ISSUE_TEMPLATE/     # Bug/feature templates
 │   ├── dependabot.yml      # Auto-update dependencies
 │   └── pull_request_template.md
@@ -19,6 +19,7 @@
 ├── CONTRIBUTING.md         # Contribution guide
 ├── SECURITY.md             # Security policy
 ├── LICENSE                 # MIT License
+├── codecov.yml             # Coverage configuration
 └── .editorconfig           # Code style settings
 ```
 
@@ -35,6 +36,11 @@ HQStudio site/
 │   ├── globals.css         # Global styles
 │   ├── sitemap.ts          # Dynamic sitemap generation
 │   └── error.tsx           # Error boundaries
+├── __tests__/              # Vitest unit tests
+│   ├── constants.test.ts   # Constants validation
+│   ├── types.test.ts       # Type guards tests
+│   ├── utils.test.ts       # Utility functions tests
+│   └── store.test.ts       # Store logic tests
 ├── components/             # React components (flat structure)
 │   ├── Admin/              # Admin panel components
 │   │   ├── AdminPanel.tsx
