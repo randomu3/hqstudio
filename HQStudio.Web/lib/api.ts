@@ -1,9 +1,57 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'
 
+// Типы для enum'ов (определяем в начале для использования в маппинге)
+export type RequestSource = 'Website' | 'Phone' | 'WalkIn' | 'Email' | 'Messenger' | 'Referral' | 'Other'
+export type RequestStatus = 'New' | 'Processing' | 'Completed' | 'Cancelled'
+
 interface ApiResponse<T> {
   data?: T
   error?: string
   unauthorized?: boolean
+}
+
+// Маппинг enum'ов из API (числа) в строки
+const SOURCE_MAP: Record<number, RequestSource> = {
+  0: 'Website',
+  1: 'Phone',
+  2: 'WalkIn',
+  3: 'Email',
+  4: 'Messenger',
+  5: 'Referral',
+  6: 'Other'
+}
+
+const STATUS_MAP: Record<number, RequestStatus> = {
+  0: 'New',
+  1: 'Processing',
+  2: 'Completed',
+  3: 'Cancelled'
+}
+
+// Преобразование callback из API
+function mapCallback(raw: RawCallbackRequest): CallbackRequest {
+  return {
+    ...raw,
+    source: typeof raw.source === 'number' ? SOURCE_MAP[raw.source] || 'Other' : raw.source,
+    status: typeof raw.status === 'number' ? STATUS_MAP[raw.status] || 'New' : raw.status
+  }
+}
+
+// Raw типы из API (с числовыми enum'ами)
+interface RawCallbackRequest {
+  id: number
+  name: string
+  phone: string
+  carModel?: string
+  licensePlate?: string
+  message?: string
+  status: number | RequestStatus
+  source: number | RequestSource
+  sourceDetails?: string
+  assignedUserId?: number
+  createdAt: string
+  processedAt?: string
+  completedAt?: string
 }
 
 // Функция для проверки истечения токена
@@ -105,19 +153,39 @@ export const api = {
   callbacks: {
     create: (data: CallbackRequestData) =>
       request<{ message: string; id: number }>('/callbacks', { method: 'POST', body: JSON.stringify(data) }),
-    createManual: (data: CallbackRequestData) =>
-      request<CallbackRequest>('/callbacks/manual', { method: 'POST', body: JSON.stringify(data) }),
-    getAll: (params?: CallbackFilters) => {
+    createManual: async (data: CallbackRequestData): Promise<ApiResponse<CallbackRequest>> => {
+      const result = await request<RawCallbackRequest>('/callbacks/manual', { method: 'POST', body: JSON.stringify(data) })
+      if (result.data) {
+        return { data: mapCallback(result.data) }
+      }
+      return result as ApiResponse<CallbackRequest>
+    },
+    getAll: async (params?: CallbackFilters): Promise<ApiResponse<CallbackRequest[]>> => {
       const query = new URLSearchParams()
       if (params?.status) query.append('status', params.status)
       if (params?.source) query.append('source', params.source)
       if (params?.from) query.append('from', params.from)
       if (params?.to) query.append('to', params.to)
-      return request<CallbackRequest[]>(`/callbacks?${query.toString()}`)
+      const result = await request<RawCallbackRequest[]>(`/callbacks?${query.toString()}`)
+      if (result.data) {
+        return { data: result.data.map(mapCallback) }
+      }
+      return result as ApiResponse<CallbackRequest[]>
     },
-    get: (id: number) => request<CallbackRequest>(`/callbacks/${id}`),
-    update: (id: number, data: Partial<CallbackRequest>) =>
-      request<CallbackRequest>(`/callbacks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    get: async (id: number): Promise<ApiResponse<CallbackRequest>> => {
+      const result = await request<RawCallbackRequest>(`/callbacks/${id}`)
+      if (result.data) {
+        return { data: mapCallback(result.data) }
+      }
+      return result as ApiResponse<CallbackRequest>
+    },
+    update: async (id: number, data: Partial<CallbackRequest>): Promise<ApiResponse<CallbackRequest>> => {
+      const result = await request<RawCallbackRequest>(`/callbacks/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+      if (result.data) {
+        return { data: mapCallback(result.data) }
+      }
+      return result as ApiResponse<CallbackRequest>
+    },
     updateStatus: (id: number, status: string) =>
       request(`/callbacks/${id}/status`, { method: 'PUT', body: JSON.stringify(status) }),
     getStats: () => request<CallbackStats>('/callbacks/stats'),
@@ -247,9 +315,6 @@ export interface CreateOrderData {
   totalPrice: number
   notes?: string
 }
-
-export type RequestSource = 'Website' | 'Phone' | 'WalkIn' | 'Email' | 'Messenger' | 'Referral' | 'Other'
-export type RequestStatus = 'New' | 'Processing' | 'Completed' | 'Cancelled'
 
 export interface CallbackRequest {
   id: number
