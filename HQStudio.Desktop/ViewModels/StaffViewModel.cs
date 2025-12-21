@@ -1,4 +1,3 @@
-using HQStudio.Models;
 using HQStudio.Services;
 using HQStudio.Views.Dialogs;
 using System.Collections.ObjectModel;
@@ -9,19 +8,26 @@ namespace HQStudio.ViewModels
 {
     public class StaffViewModel : BaseViewModel
     {
-        private readonly DataService _dataService = DataService.Instance;
-        private User? _selectedUser;
+        private readonly ApiService _apiService = ApiService.Instance;
+        private readonly SettingsService _settings = SettingsService.Instance;
+        private StaffItem? _selectedUser;
+        private bool _isLoading;
 
-        public ObservableCollection<User> Users { get; } = new();
+        public ObservableCollection<StaffItem> Users { get; } = new();
 
-        public User? SelectedUser
+        public StaffItem? SelectedUser
         {
             get => _selectedUser;
             set => SetProperty(ref _selectedUser, value);
         }
 
-        public bool IsAdmin => _dataService.CurrentUser?.Role == "Admin";
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set => SetProperty(ref _isLoading, value);
+        }
 
+        public ICommand RefreshCommand { get; }
         public ICommand AddUserCommand { get; }
         public ICommand EditUserCommand { get; }
         public ICommand ToggleActiveCommand { get; }
@@ -29,96 +35,181 @@ namespace HQStudio.ViewModels
 
         public StaffViewModel()
         {
-            AddUserCommand = new RelayCommand(_ => AddUser(), _ => IsAdmin);
-            EditUserCommand = new RelayCommand(_ => EditUser(), _ => SelectedUser != null && IsAdmin);
-            ToggleActiveCommand = new RelayCommand(_ => ToggleActive(), _ => SelectedUser != null && IsAdmin);
-            DeleteUserCommand = new RelayCommand(_ => DeleteUser(), _ => SelectedUser != null && IsAdmin && SelectedUser.Id != _dataService.CurrentUser?.Id);
-            LoadUsers();
+            RefreshCommand = new RelayCommand(async _ => await LoadUsersAsync());
+            AddUserCommand = new RelayCommand(async _ => await AddUserAsync());
+            EditUserCommand = new RelayCommand(async _ => await EditUserAsync(), _ => SelectedUser != null);
+            ToggleActiveCommand = new RelayCommand(async _ => await ToggleActiveAsync(), _ => SelectedUser != null);
+            DeleteUserCommand = new RelayCommand(async _ => await DeleteUserAsync(), _ => SelectedUser != null);
+            
+            _ = LoadUsersAsync();
         }
 
-        private void LoadUsers()
+        private async Task LoadUsersAsync()
         {
-            Users.Clear();
-            foreach (var user in _dataService.Users)
+            if (!_settings.UseApi)
             {
-                Users.Add(user);
+                MessageBox.Show("API отключён в настройках", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
             }
+
+            IsLoading = true;
+
+            try
+            {
+                var users = await _apiService.GetUsersAsync();
+                
+                Users.Clear();
+                foreach (var user in users)
+                {
+                    Users.Add(new StaffItem
+                    {
+                        Id = user.Id,
+                        Login = user.Login,
+                        Name = user.Name,
+                        Role = user.Role,
+                        IsActive = user.IsActive,
+                        IsOnline = user.IsOnline,
+                        CreatedAt = user.CreatedAt
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            IsLoading = false;
         }
 
-        private void AddUser()
+        private async Task AddUserAsync()
         {
             var dialog = new EditUserDialog();
             dialog.Owner = Application.Current.MainWindow;
-            
+
             if (dialog.ShowDialog() == true)
             {
-                // Check if username exists
-                if (_dataService.Users.Any(u => u.Username == dialog.User.Username))
+                var request = new CreateApiUserRequest
                 {
-                    MessageBox.Show("Пользователь с таким логином уже существует", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+                    Login = dialog.UserLogin,
+                    Name = dialog.UserName,
+                    Password = dialog.UserPassword,
+                    Role = dialog.UserRole
+                };
+
+                var result = await _apiService.CreateUserAsync(request);
+                if (result != null)
+                {
+                    await LoadUsersAsync();
+                    MessageBox.Show($"Сотрудник {result.Name} добавлен", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
-                
-                dialog.User.Id = _dataService.GetNextId(_dataService.Users);
-                dialog.User.CreatedAt = DateTime.Now;
-                _dataService.Users.Add(dialog.User);
-                _dataService.SaveData();
-                LoadUsers();
+                else
+                {
+                    MessageBox.Show("Не удалось создать пользователя. Возможно, логин уже занят.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
         }
 
-        private void EditUser()
+        private async Task EditUserAsync()
         {
             if (SelectedUser == null) return;
-            
+
             var dialog = new EditUserDialog(SelectedUser);
             dialog.Owner = Application.Current.MainWindow;
-            
+
             if (dialog.ShowDialog() == true)
             {
-                _dataService.SaveData();
-                LoadUsers();
+                var request = new UpdateApiUserRequest
+                {
+                    Name = dialog.UserName,
+                    Role = dialog.UserRole,
+                    Password = string.IsNullOrEmpty(dialog.UserPassword) ? null : dialog.UserPassword
+                };
+
+                var success = await _apiService.UpdateUserAsync(SelectedUser.Id, request);
+                if (success)
+                {
+                    await LoadUsersAsync();
+                }
+                else
+                {
+                    MessageBox.Show("Не удалось обновить пользователя", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
         }
 
-        private void ToggleActive()
+        private async Task ToggleActiveAsync()
         {
             if (SelectedUser == null) return;
-            
-            // Prevent deactivating yourself
-            if (SelectedUser.Id == _dataService.CurrentUser?.Id)
-            {
-                MessageBox.Show("Нельзя деактивировать свой аккаунт", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            
-            SelectedUser.IsActive = !SelectedUser.IsActive;
-            _dataService.SaveData();
-            LoadUsers();
-        }
 
-        private void DeleteUser()
-        {
-            if (SelectedUser == null) return;
-            
-            if (SelectedUser.Id == _dataService.CurrentUser?.Id)
+            if (SelectedUser.Login == "admin")
             {
-                MessageBox.Show("Нельзя удалить свой аккаунт", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Нельзя деактивировать администратора", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            
+
+            var action = SelectedUser.IsActive ? "деактивировать" : "активировать";
             var result = MessageBox.Show(
-                $"Удалить сотрудника \"{SelectedUser.DisplayName}\"?",
+                $"{action.Substring(0, 1).ToUpper() + action.Substring(1)} сотрудника \"{SelectedUser.Name}\"?",
                 "Подтверждение",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
-            
+
             if (result == MessageBoxResult.Yes)
             {
-                _dataService.Users.Remove(SelectedUser);
-                _dataService.SaveData();
-                LoadUsers();
+                var success = await _apiService.ToggleUserActiveAsync(SelectedUser.Id);
+                if (success)
+                {
+                    await LoadUsersAsync();
+                }
             }
         }
+
+        private async Task DeleteUserAsync()
+        {
+            if (SelectedUser == null) return;
+
+            if (SelectedUser.Login == "admin")
+            {
+                MessageBox.Show("Нельзя удалить администратора", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Удалить сотрудника \"{SelectedUser.Name}\"?\n\nУчётная запись будет деактивирована, но сохранена в базе.",
+                "Подтверждение",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                var success = await _apiService.DeleteUserAsync(SelectedUser.Id);
+                if (success)
+                {
+                    await LoadUsersAsync();
+                }
+            }
+        }
+    }
+
+    public class StaffItem
+    {
+        public int Id { get; set; }
+        public string Login { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Role { get; set; } = "";
+        public bool IsActive { get; set; }
+        public bool IsOnline { get; set; }
+        public DateTime CreatedAt { get; set; }
+
+        public string RoleDisplay => Role switch
+        {
+            "Admin" => "Администратор",
+            "Editor" => "Редактор",
+            "Manager" => "Менеджер",
+            _ => "Работник"
+        };
+
+        public string StatusText => IsOnline ? "В сети" : (IsActive ? "Не в сети" : "Неактивен");
+        public string StatusColor => IsOnline ? "#4CAF50" : (IsActive ? "#707070" : "#F44336");
     }
 }

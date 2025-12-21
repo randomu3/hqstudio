@@ -459,6 +459,59 @@ namespace HQStudio.Services
             catch { }
             return null;
         }
+
+        // Users
+        public async Task<List<ApiUserDetail>> GetUsersAsync()
+        {
+            try
+            {
+                var result = await _http.GetFromJsonAsync<List<ApiUserDetail>>("/api/users");
+                return result ?? new();
+            }
+            catch { return new(); }
+        }
+
+        public async Task<ApiUserDetail?> CreateUserAsync(CreateApiUserRequest user)
+        {
+            try
+            {
+                var response = await _http.PostAsJsonAsync("/api/users", user);
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadFromJsonAsync<ApiUserDetail>();
+            }
+            catch { }
+            return null;
+        }
+
+        public async Task<bool> UpdateUserAsync(int id, UpdateApiUserRequest user)
+        {
+            try
+            {
+                var response = await _http.PutAsJsonAsync($"/api/users/{id}", user);
+                return response.IsSuccessStatusCode;
+            }
+            catch { return false; }
+        }
+
+        public async Task<bool> ToggleUserActiveAsync(int id)
+        {
+            try
+            {
+                var response = await _http.PutAsync($"/api/users/{id}/toggle-active", null);
+                return response.IsSuccessStatusCode;
+            }
+            catch { return false; }
+        }
+
+        public async Task<bool> DeleteUserAsync(int id)
+        {
+            try
+            {
+                var response = await _http.DeleteAsync($"/api/users/{id}");
+                return response.IsSuccessStatusCode;
+            }
+            catch { return false; }
+        }
     }
 
     // Session DTOs
@@ -706,5 +759,32 @@ namespace HQStudio.Services
         public int UserId { get; set; }
         public string UserName { get; set; } = "";
         public int Count { get; set; }
+    }
+
+    // User DTOs
+    public class ApiUserDetail
+    {
+        public int Id { get; set; }
+        public string Login { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Role { get; set; } = "";
+        public bool IsActive { get; set; }
+        public bool IsOnline { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class CreateApiUserRequest
+    {
+        public string Login { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string Role { get; set; } = "Manager";
+    }
+
+    public class UpdateApiUserRequest
+    {
+        public string Name { get; set; } = "";
+        public string Role { get; set; } = "";
+        public string? Password { get; set; }
     }
 }

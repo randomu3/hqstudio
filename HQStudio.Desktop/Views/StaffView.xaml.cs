@@ -1,6 +1,4 @@
-using HQStudio.Models;
 using HQStudio.ViewModels;
-using HQStudio.Views.Dialogs;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -16,28 +14,20 @@ namespace HQStudio.Views
 
         private void User_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (e.ClickCount == 2 && sender is FrameworkElement element && element.DataContext is User user)
+            if (sender is FrameworkElement element && element.DataContext is StaffItem user)
             {
-                // Check if current user is admin
-                if (Services.DataService.Instance.CurrentUser?.Role != "Admin")
+                // Одиночный клик - выбор
+                if (DataContext is StaffViewModel vm)
                 {
-                    MessageBox.Show("Только администратор может редактировать сотрудников", "Доступ запрещен", 
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+                    vm.SelectedUser = user;
                 }
 
-                var dialog = new EditUserDialog(user);
-                dialog.Owner = Window.GetWindow(this);
-                
-                if (dialog.ShowDialog() == true)
+                // Двойной клик - редактирование
+                if (e.ClickCount == 2)
                 {
-                    Services.DataService.Instance.SaveData();
-                    if (DataContext is StaffViewModel vm)
+                    if (DataContext is StaffViewModel viewModel)
                     {
-                        // Refresh by triggering property change
-                        vm.Users.Clear();
-                        foreach (var u in Services.DataService.Instance.Users)
-                            vm.Users.Add(u);
+                        viewModel.EditUserCommand.Execute(null);
                     }
                 }
             }

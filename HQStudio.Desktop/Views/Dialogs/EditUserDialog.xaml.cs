@@ -1,4 +1,4 @@
-using HQStudio.Models;
+using HQStudio.ViewModels;
 using System.Windows;
 using System.Windows.Input;
 
@@ -6,28 +6,36 @@ namespace HQStudio.Views.Dialogs
 {
     public partial class EditUserDialog : Window
     {
-        public User User { get; private set; }
         public bool IsNew { get; }
+        
+        // Свойства для получения данных из формы
+        public string UserLogin => UsernameBox.Text.Trim().ToLower();
+        public string UserName => DisplayNameBox.Text.Trim();
+        public string UserPassword => PasswordBox.Password;
+        public string UserRole => RoleCombo.SelectedIndex == 0 ? "Admin" : "Manager";
 
-        public EditUserDialog(User? user = null)
+        public EditUserDialog(StaffItem? user = null)
         {
             InitializeComponent();
             IsNew = user == null;
-            User = user ?? new User();
             
             TitleText.Text = IsNew ? "Новый сотрудник" : "Редактирование сотрудника";
-            LoadData();
+            
+            if (user != null)
+            {
+                LoadData(user);
+                UsernameBox.IsEnabled = false; // Логин нельзя менять
+            }
             
             Loaded += (s, e) => DisplayNameBox.Focus();
         }
 
-        private void LoadData()
+        private void LoadData(StaffItem user)
         {
-            DisplayNameBox.Text = User.DisplayName;
-            UsernameBox.Text = User.Username;
-            PasswordBox.Password = User.PasswordHash;
-            RoleCombo.SelectedIndex = User.Role == "Admin" ? 0 : 1;
-            IsActiveCheck.IsChecked = User.IsActive;
+            DisplayNameBox.Text = user.Name;
+            UsernameBox.Text = user.Login;
+            RoleCombo.SelectedIndex = user.Role == "Admin" ? 0 : 1;
+            IsActiveCheck.IsChecked = user.IsActive;
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
@@ -52,15 +60,6 @@ namespace HQStudio.Views.Dialogs
                 PasswordBox.Focus();
                 return;
             }
-
-            User.DisplayName = DisplayNameBox.Text.Trim();
-            User.Username = UsernameBox.Text.Trim().ToLower();
-            
-            if (!string.IsNullOrEmpty(PasswordBox.Password))
-                User.PasswordHash = PasswordBox.Password;
-            
-            User.Role = RoleCombo.SelectedIndex == 0 ? "Admin" : "Worker";
-            User.IsActive = IsActiveCheck.IsChecked ?? true;
 
             DialogResult = true;
             Close();
