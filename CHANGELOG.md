@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/randomu3/hqstudio/compare/v1.1.0...v1.1.1) (2025-12-21)
+
+
+### 🐛 Исправления
+
+* **web:** добавлен ESLint конфиг для CI ([31af835](https://github.com/randomu3/hqstudio/commit/31af83549f5be957825ee2f2d5ac51a423a77af1))
+
 ## [1.1.0](https://github.com/randomu3/hqstudio/compare/v1.0.0...v1.1.0) (2025-12-21)
 
 
