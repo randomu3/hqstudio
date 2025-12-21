@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/randomu3/hqstudio/compare/v1.5.0...v1.5.1) (2025-12-21)
+
+
+### 🐛 Исправления
+
+* **desktop:** исправлена загрузка журнала ответственности ([6f1afb3](https://github.com/randomu3/hqstudio/commit/6f1afb38dfc0500684148da65de86d1deb6e35c9))
+
 ## [1.5.0](https://github.com/randomu3/hqstudio/compare/v1.4.0...v1.5.0) (2025-12-21)
 
 
