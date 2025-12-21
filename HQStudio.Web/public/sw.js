@@ -39,6 +39,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // НЕ кэшируем API запросы - они требуют авторизации
+  if (event.request.url.includes('/api/')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {

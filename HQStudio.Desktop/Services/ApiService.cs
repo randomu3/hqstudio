@@ -203,10 +203,25 @@ namespace HQStudio.Services
                 if (status != null) query.Add($"status={status}");
                 if (source != null) query.Add($"source={source}");
                 var url = "/api/callbacks" + (query.Count > 0 ? "?" + string.Join("&", query) : "");
-                var result = await _http.GetFromJsonAsync<List<ApiCallback>>(url);
-                return result ?? new();
+                System.Diagnostics.Debug.WriteLine($"GetCallbacksAsync: requesting {url}");
+                var response = await _http.GetAsync(url);
+                var content = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"GetCallbacksAsync: response status {response.StatusCode}");
+                System.Diagnostics.Debug.WriteLine($"GetCallbacksAsync: response content length {content.Length}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = System.Text.Json.JsonSerializer.Deserialize<List<ApiCallback>>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    System.Diagnostics.Debug.WriteLine($"GetCallbacksAsync: deserialized {result?.Count ?? 0} items");
+                    return result ?? new();
+                }
+                System.Diagnostics.Debug.WriteLine($"GetCallbacksAsync: error response {content}");
+                return new();
             }
-            catch { return new(); }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GetCallbacksAsync error: {ex.Message}");
+                return new();
+            }
         }
 
         public async Task<ApiCallback?> GetCallbackAsync(int id)
@@ -523,8 +538,8 @@ namespace HQStudio.Services
         public string? CarModel { get; set; }
         public string? LicensePlate { get; set; }
         public string? Message { get; set; }
-        public string Status { get; set; } = "";
-        public RequestSource Source { get; set; }
+        public int Status { get; set; } // API возвращает enum как число
+        public int Source { get; set; } // API возвращает enum как число
         public string? SourceDetails { get; set; }
         public int? AssignedUserId { get; set; }
         public DateTime CreatedAt { get; set; }

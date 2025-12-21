@@ -93,6 +93,13 @@ namespace HQStudio.ViewModels
         private async Task LoadDataAsync()
         {
             IsLoading = true;
+            
+            // Проверяем подключение к API
+            if (_settings.UseApi)
+            {
+                await _apiService.CheckConnectionAsync();
+            }
+            
             IsApiConnected = _settings.UseApi && _apiService.IsConnected;
 
             if (!IsApiConnected)
@@ -112,6 +119,7 @@ namespace HQStudio.ViewModels
 
                 // Загружаем заявки
                 var callbacks = await _apiService.GetCallbacksAsync();
+                System.Diagnostics.Debug.WriteLine($"Loaded {callbacks.Count} callbacks from API");
                 _allCallbacks = callbacks.Select(c => new CallbackItem
                 {
                     Id = c.Id,
@@ -127,12 +135,15 @@ namespace HQStudio.ViewModels
                     ProcessedAt = c.ProcessedAt,
                     CompletedAt = c.CompletedAt
                 }).ToList();
+                System.Diagnostics.Debug.WriteLine($"Mapped {_allCallbacks.Count} callbacks");
 
                 FilterCallbacks();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"LoadDataAsync error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
             IsLoading = false;
@@ -250,29 +261,29 @@ namespace HQStudio.ViewModels
             }
         }
 
-        private string MapStatus(string apiStatus)
+        private string MapStatus(int apiStatus)
         {
             return apiStatus switch
             {
-                "New" => "Новая",
-                "Processing" => "В работе",
-                "Completed" => "Завершена",
-                "Cancelled" => "Отменена",
-                _ => apiStatus
+                0 => "Новая",
+                1 => "В работе",
+                2 => "Завершена",
+                3 => "Отменена",
+                _ => $"Статус {apiStatus}"
             };
         }
 
-        private string MapSource(RequestSource source)
+        private string MapSource(int source)
         {
             return source switch
             {
-                RequestSource.Website => "Сайт",
-                RequestSource.Phone => "Звонок",
-                RequestSource.WalkIn => "Живой приход",
-                RequestSource.Email => "Почта",
-                RequestSource.Messenger => "Мессенджер",
-                RequestSource.Referral => "Рекомендация",
-                RequestSource.Other => "Другое",
+                0 => "Сайт",
+                1 => "Звонок",
+                2 => "Живой приход",
+                3 => "Почта",
+                4 => "Мессенджер",
+                5 => "Рекомендация",
+                6 => "Другое",
                 _ => "Неизвестно"
             };
         }

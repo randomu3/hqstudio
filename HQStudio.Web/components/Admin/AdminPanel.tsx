@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import SectionPreview from './SectionPreview'
 import NotificationSettings from './NotificationSettings'
+import CallbacksPanel from './CallbacksPanel'
 
 const AdminPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const {
@@ -1031,28 +1032,7 @@ const AdminPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
             {/* Requests Tab */}
             {activeTab === 'requests' && (
-              <div className="space-y-6 pb-12">
-                <h2 className="text-xl font-black uppercase text-white">Входящие заявки</h2>
-                {data.callbackRequests.length === 0 ? (
-                  <p className="text-neutral-600 text-center py-24 uppercase text-xs tracking-widest italic">Список заявок пуст</p>
-                ) : (
-                  <div className="space-y-4">
-                    {data.callbackRequests.map(r => (
-                      <div key={r.id} className="bg-neutral-900/40 p-8 rounded-[40px] border border-white/10 flex justify-between items-center hover:bg-neutral-900/60 transition-all">
-                        <div className="space-y-1">
-                          <p className="text-xl font-bold text-white">{r.name}</p>
-                          <a href={`tel:${r.phone}`} className="text-2xl text-neutral-400 font-light tracking-tighter hover:text-white transition-colors">{r.phone}</a>
-                          <div className="flex gap-2 mt-4">
-                            <span className="text-[9px] font-black bg-white/5 px-3 py-1.5 rounded-xl text-neutral-400 uppercase tracking-widest border border-white/5">{r.service || 'ОБЩИЙ ЗАПРОС'}</span>
-                            {r.carModel && <span className="text-[9px] font-black bg-white/5 px-3 py-1.5 rounded-xl text-neutral-400 uppercase tracking-widest border border-white/5">{r.carModel}</span>}
-                          </div>
-                        </div>
-                        <button onClick={() => deleteRequest(r.id)} className="p-6 bg-red-500/10 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-90"><Trash2 size={24} /></button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <CallbacksPanel />
             )}
 
             {/* Subscriptions Tab */}
