@@ -1,3 +1,11 @@
+## [1.2.1](https://github.com/randomu3/hqstudio/compare/v1.2.0...v1.2.1) (2025-12-21)
+
+
+### 🐛 Исправления
+
+* **web:** заменена битая ссылка на Unsplash изображение ([cb92dd3](https://github.com/randomu3/hqstudio/commit/cb92dd33a1bb93953acc30d9da58ed2b0ae776b7))
+* **web:** исправлены ошибки PWA ([4b15d1d](https://github.com/randomu3/hqstudio/commit/4b15d1d11f2c7d7df78153d515fe2821dbd45fd1))
+
 ## [1.2.0](https://github.com/randomu3/hqstudio/compare/v1.1.4...v1.2.0) (2025-12-21)
 
 
