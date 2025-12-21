@@ -1,3 +1,10 @@
+## [1.5.0](https://github.com/randomu3/hqstudio/compare/v1.4.0...v1.5.0) (2025-12-21)
+
+
+### 🚀 Новые возможности
+
+* **web:** автообновление заявок при добавлении через конфигуратор ([f17d9ca](https://github.com/randomu3/hqstudio/commit/f17d9cae2720b418e3662222dd2aed617102b1ba))
+
 ## [1.4.0](https://github.com/randomu3/hqstudio/compare/v1.3.0...v1.4.0) (2025-12-21)
 
 
