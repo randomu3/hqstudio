@@ -12,6 +12,17 @@ updates:
       - "web"
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-config-next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
+        update-types: ["version-update:semver-major"]
 
   # NPM dependencies (root - semantic-release)
   - package-ecosystem: "npm"
