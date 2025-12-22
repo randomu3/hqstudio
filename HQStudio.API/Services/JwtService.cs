@@ -15,16 +15,18 @@ public class JwtService
         _config = config;
     }
 
-    public string GenerateToken(User user)
+    public string GenerateToken(User user, UserRole? effectiveRole = null)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        
+        var role = effectiveRole ?? user.Role;
 
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Login),
-            new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim(ClaimTypes.Role, role.ToString()),
             new Claim("FullName", user.Name)
         };
 

@@ -38,8 +38,22 @@ public class AuthController : ControllerBase
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return Unauthorized(new { message = "Неверный логин или пароль" });
 
-        var token = _jwt.GenerateToken(user);
-        var userDto = new UserDto(user.Id, user.Login, user.Name, user.Role);
+        // Определяем платформу
+        var clientType = Request.Headers["X-Client-Type"].FirstOrDefault();
+        var isDesktopClient = clientType?.Equals("Desktop", StringComparison.OrdinalIgnoreCase) == true;
+        var platform = isDesktopClient ? "Desktop" : "Web";
+
+        // Проверяем права доступа к платформе
+        if (isDesktopClient && !user.CanAccessDesktop)
+            return Unauthorized(new { message = "У вас нет доступа к Desktop приложению" });
+        if (!isDesktopClient && !user.CanAccessWeb)
+            return Unauthorized(new { message = "У вас нет доступа к Web панели" });
+
+        // Получаем роль для конкретной платформы
+        var effectiveRole = user.GetRoleForPlatform(platform);
+        
+        var token = _jwt.GenerateToken(user, effectiveRole);
+        var userDto = new UserDto(user.Id, user.Login, user.Name, effectiveRole);
 
         return Ok(new LoginResponse(token, userDto, user.MustChangePassword));
     }

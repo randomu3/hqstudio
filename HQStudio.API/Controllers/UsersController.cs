@@ -53,7 +53,11 @@ public class UsersController : ControllerBase
             u.Role.ToString(),
             u.IsActive,
             activeSessions.Contains(u.Id),
-            u.CreatedAt
+            u.CreatedAt,
+            u.CanAccessWeb,
+            u.CanAccessDesktop,
+            u.WebRole?.ToString(),
+            u.DesktopRole?.ToString()
         )).ToList();
     }
 
@@ -74,7 +78,12 @@ public class UsersController : ControllerBase
         var isOnline = await _db.UserSessions
             .AnyAsync(s => s.UserId == id && s.Status == UserStatus.Online && s.LastHeartbeat > DateTime.UtcNow.AddMinutes(-5));
         
-        return new UserDetailDto(user.Id, user.Login, user.Name, user.Role.ToString(), user.IsActive, isOnline, user.CreatedAt);
+        return new UserDetailDto(
+            user.Id, user.Login, user.Name, user.Role.ToString(), 
+            user.IsActive, isOnline, user.CreatedAt,
+            user.CanAccessWeb, user.CanAccessDesktop,
+            user.WebRole?.ToString(), user.DesktopRole?.ToString()
+        );
     }
 
     [HttpPost]
@@ -101,13 +110,22 @@ public class UsersController : ControllerBase
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = Enum.TryParse<UserRole>(request.Role, out var role) ? role : UserRole.Manager,
             IsActive = true,
+            CanAccessWeb = request.CanAccessWeb ?? true,
+            CanAccessDesktop = request.CanAccessDesktop ?? true,
+            WebRole = !string.IsNullOrEmpty(request.WebRole) && Enum.TryParse<UserRole>(request.WebRole, out var webRole) ? webRole : null,
+            DesktopRole = !string.IsNullOrEmpty(request.DesktopRole) && Enum.TryParse<UserRole>(request.DesktopRole, out var desktopRole) ? desktopRole : null,
             CreatedAt = DateTime.UtcNow
         };
         
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
         
-        return Ok(new UserDetailDto(user.Id, user.Login, user.Name, user.Role.ToString(), user.IsActive, false, user.CreatedAt));
+        return Ok(new UserDetailDto(
+            user.Id, user.Login, user.Name, user.Role.ToString(), 
+            user.IsActive, false, user.CreatedAt,
+            user.CanAccessWeb, user.CanAccessDesktop,
+            user.WebRole?.ToString(), user.DesktopRole?.ToString()
+        ));
     }
 
     [HttpPut("{id}")]
@@ -129,6 +147,18 @@ public class UsersController : ControllerBase
         {
             user.Role = role;
         }
+        
+        // Обновляем права доступа
+        if (request.CanAccessWeb.HasValue)
+            user.CanAccessWeb = request.CanAccessWeb.Value;
+        if (request.CanAccessDesktop.HasValue)
+            user.CanAccessDesktop = request.CanAccessDesktop.Value;
+        
+        // Обновляем роли для платформ
+        if (request.WebRole != null)
+            user.WebRole = Enum.TryParse<UserRole>(request.WebRole, out var webRole) ? webRole : null;
+        if (request.DesktopRole != null)
+            user.DesktopRole = Enum.TryParse<UserRole>(request.DesktopRole, out var desktopRole) ? desktopRole : null;
         
         if (!string.IsNullOrEmpty(request.Password))
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
@@ -210,6 +240,37 @@ public class UsersController : ControllerBase
     }
 }
 
-public record CreateUserRequest(string Login, string Name, string Password, string Role);
-public record UpdateUserRequest(string Name, string Role, string? Password);
-public record UserDetailDto(int Id, string Login, string Name, string Role, bool IsActive, bool IsOnline, DateTime CreatedAt);
+public record CreateUserRequest(
+    string Login, 
+    string Name, 
+    string Password, 
+    string Role,
+    bool? CanAccessWeb = true,
+    bool? CanAccessDesktop = true,
+    string? WebRole = null,
+    string? DesktopRole = null
+);
+
+public record UpdateUserRequest(
+    string Name, 
+    string Role, 
+    string? Password = null,
+    bool? CanAccessWeb = null,
+    bool? CanAccessDesktop = null,
+    string? WebRole = null,
+    string? DesktopRole = null
+);
+
+public record UserDetailDto(
+    int Id, 
+    string Login, 
+    string Name, 
+    string Role, 
+    bool IsActive, 
+    bool IsOnline, 
+    DateTime CreatedAt,
+    bool CanAccessWeb = true,
+    bool CanAccessDesktop = true,
+    string? WebRole = null,
+    string? DesktopRole = null
+);
