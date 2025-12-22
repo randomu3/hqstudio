@@ -9,7 +9,6 @@ namespace HQStudio.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class ActivityLogController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -17,6 +16,12 @@ public class ActivityLogController : ControllerBase
     public ActivityLogController(AppDbContext db)
     {
         _db = db;
+    }
+
+    private bool IsDesktopClient()
+    {
+        var clientType = Request.Headers["X-Client-Type"].FirstOrDefault();
+        return clientType?.Equals("Desktop", StringComparison.OrdinalIgnoreCase) == true;
     }
 
     /// <summary>
@@ -31,10 +36,24 @@ public class ActivityLogController : ControllerBase
         [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null)
     {
+        // Для веб-клиентов требуется авторизация
+        if (!IsDesktopClient() && !User.Identity?.IsAuthenticated == true)
+        {
+            return Unauthorized(new { message = "Требуется авторизация" });
+        }
+
         var query = _db.ActivityLogs.AsQueryable();
 
-        if (!string.IsNullOrEmpty(source))
+        // Для веб-клиентов показываем только Web логи
+        if (!IsDesktopClient())
+        {
+            query = query.Where(a => a.Source == "Web");
+        }
+        else if (!string.IsNullOrEmpty(source))
+        {
+            // Desktop может фильтровать по любому источнику
             query = query.Where(a => a.Source == source);
+        }
 
         if (userId.HasValue)
             query = query.Where(a => a.UserId == userId.Value);
@@ -81,11 +100,24 @@ public class ActivityLogController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateActivityLogDto dto)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Unknown";
+        int userId = 0;
+        string userName = "System";
 
-        if (!int.TryParse(userIdClaim, out var userId))
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Unknown";
+            int.TryParse(userIdClaim, out userId);
+        }
+        else if (IsDesktopClient())
+        {
+            // Desktop клиент без авторизации
+            userName = dto.Source == "Desktop" ? "Desktop User" : "System";
+        }
+        else
+        {
             return Unauthorized();
+        }
 
         var log = new ActivityLog
         {
@@ -112,19 +144,32 @@ public class ActivityLogController : ControllerBase
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
+        // Для веб-клиентов требуется авторизация
+        if (!IsDesktopClient() && !User.Identity?.IsAuthenticated == true)
+        {
+            return Unauthorized(new { message = "Требуется авторизация" });
+        }
+
         var today = DateTime.UtcNow.Date;
         var weekAgo = today.AddDays(-7);
 
+        // Базовый запрос - для веб только Web логи
+        var baseQuery = _db.ActivityLogs.AsQueryable();
+        if (!IsDesktopClient())
+        {
+            baseQuery = baseQuery.Where(a => a.Source == "Web");
+        }
+
         var stats = new
         {
-            TotalToday = await _db.ActivityLogs.CountAsync(a => a.CreatedAt >= today),
-            TotalWeek = await _db.ActivityLogs.CountAsync(a => a.CreatedAt >= weekAgo),
-            TotalAll = await _db.ActivityLogs.CountAsync(),
-            BySource = await _db.ActivityLogs
+            TotalToday = await baseQuery.CountAsync(a => a.CreatedAt >= today),
+            TotalWeek = await baseQuery.CountAsync(a => a.CreatedAt >= weekAgo),
+            TotalAll = await baseQuery.CountAsync(),
+            BySource = await baseQuery
                 .GroupBy(a => a.Source)
                 .Select(g => new { Source = g.Key, Count = g.Count() })
                 .ToListAsync(),
-            ByUser = await _db.ActivityLogs
+            ByUser = await baseQuery
                 .Where(a => a.CreatedAt >= weekAgo)
                 .GroupBy(a => new { a.UserId, a.UserName })
                 .Select(g => new { g.Key.UserId, g.Key.UserName, Count = g.Count() })

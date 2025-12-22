@@ -117,7 +117,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -149,6 +153,31 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    
+    // Команда очистки заказов без клиентов
+    if (args.Contains("--cleanup-orders"))
+    {
+        Console.WriteLine("Очистка заказов без клиентов...");
+        var ordersWithoutClients = db.Orders
+            .Where(o => o.ClientId == 0 || !db.Clients.Any(c => c.Id == o.ClientId))
+            .ToList();
+        
+        Console.WriteLine($"Найдено заказов без клиентов: {ordersWithoutClients.Count}");
+        
+        if (ordersWithoutClients.Any())
+        {
+            foreach (var order in ordersWithoutClients)
+            {
+                Console.WriteLine($"  - Заказ #{order.Id}, ClientId={order.ClientId}");
+            }
+            
+            db.Orders.RemoveRange(ordersWithoutClients);
+            db.SaveChanges();
+            Console.WriteLine($"Удалено {ordersWithoutClients.Count} заказов.");
+        }
+        
+        return;
+    }
     
     // В Development создаём тестовые данные и простые пароли
     var isDevelopment = app.Environment.IsDevelopment();

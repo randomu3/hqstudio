@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace HQStudio.API.Models;
 
 public class Service
@@ -11,5 +13,6 @@ public class Service
     public bool IsActive { get; set; } = true;
     public int SortOrder { get; set; }
     
+    [JsonIgnore]
     public ICollection<OrderService> OrderServices { get; set; } = new List<OrderService>();
 }
