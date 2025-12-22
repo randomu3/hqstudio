@@ -1,0 +1,129 @@
+<Window x:Class="HQStudio.Views.Dialogs.CreateClientFromCallbackDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:behaviors="clr-namespace:HQStudio.Desktop.Behaviors"
+        Title="Создание клиента из заявки" 
+        Height="650" Width="520"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        KeyDown="Window_KeyDown"
+        FocusManager.FocusedElement="{Binding ElementName=NameBox}">
+
+    <Border Background="{DynamicResource BgPrimaryBrush}" CornerRadius="16" 
+            BorderBrush="{DynamicResource BorderDefaultBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0" Background="{DynamicResource BgSecondaryBrush}" 
+                    CornerRadius="16,16,0,0" Padding="24,18"
+                    MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="👤" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Создание клиента из заявки" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button Content="✕" Click="Close_Click" Style="{DynamicResource BtnIcon}"
+                            HorizontalAlignment="Right" Width="36" Height="36"/>
+                </Grid>
+            </Border>
+
+            <!-- Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="24,20,24,24">
+                    
+                    <!-- Duplicate Warning -->
+                    <Border x:Name="DuplicateWarning" Visibility="Collapsed"
+                            Background="#2A2A1A" CornerRadius="12" 
+                            BorderBrush="#FFC107" BorderThickness="1"
+                            Padding="16" Margin="0,0,0,20">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBlock Text="⚠️" FontSize="18" Margin="0,0,10,0"/>
+                                <TextBlock Text="Найден похожий клиент!" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="#FFC107" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock x:Name="ExistingClientName" FontSize="14" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                    <TextBlock x:Name="ExistingClientPhone" FontSize="13" Foreground="#2196F3" Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="ExistingClientCar" FontSize="12" 
+                                               Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Button x:Name="LinkToExistingBtn" Content="📎 Привязать заявку к этому клиенту" 
+                                    Click="LinkToExisting_Click" Style="{DynamicResource BtnSuccess}"
+                                    Padding="16,10"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Form -->
+                    <TextBlock Text="ДАННЫЕ КЛИЕНТА" Style="{DynamicResource TextLabel}" Margin="0,0,0,12"/>
+                    <TextBlock Text="Проверьте и отредактируйте данные перед сохранением" 
+                               Style="{DynamicResource TextSmall}" Margin="0,0,0,16"/>
+
+                    <TextBlock Text="ИМЯ КЛИЕНТА *" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                    <TextBox x:Name="NameBox" Style="{DynamicResource InputText}" Margin="0,0,0,16" 
+                             TabIndex="0" TextChanged="Phone_TextChanged"/>
+
+                    <TextBlock Text="ТЕЛЕФОН *" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                    <TextBox x:Name="PhoneBox" Style="{DynamicResource InputText}" Margin="0,0,0,16" 
+                             behaviors:PhoneTextBoxBehavior.IsEnabled="True"
+                             TabIndex="1" TextChanged="Phone_TextChanged"/>
+
+                    <TextBlock Text="АВТОМОБИЛЬ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                    <TextBox x:Name="CarBox" Style="{DynamicResource InputText}" Margin="0,0,0,16" TabIndex="2"/>
+
+                    <TextBlock Text="ГОС. НОМЕР" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                    <TextBox x:Name="CarNumberBox" Style="{DynamicResource InputText}" Margin="0,0,0,16"
+                             CharacterCasing="Upper" TabIndex="3"/>
+
+                    <TextBlock Text="ЗАМЕТКИ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                    <TextBox x:Name="NotesBox" Style="{DynamicResource InputText}" 
+                             TextWrapping="Wrap" AcceptsReturn="True" Height="80"
+                             VerticalContentAlignment="Top" TabIndex="4"/>
+
+                    <!-- Source Info -->
+                    <Border Background="{DynamicResource BgCardBrush}" CornerRadius="12" 
+                            BorderBrush="{DynamicResource BorderDefaultBrush}" BorderThickness="1"
+                            Padding="16" Margin="0,20,0,0">
+                        <StackPanel>
+                            <TextBlock Text="ИСТОЧНИК ЗАЯВКИ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="SourceIcon" FontSize="16" Margin="0,0,8,0"/>
+                                <TextBlock x:Name="SourceText" FontSize="13" 
+                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                            <TextBlock x:Name="CallbackDateText" FontSize="12" 
+                                       Foreground="{DynamicResource TextMutedBrush}" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Footer -->
+            <Border Grid.Row="2" Padding="24,18" BorderBrush="{DynamicResource BorderDefaultBrush}" 
+                    BorderThickness="0,1,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Content="Отмена" Style="{DynamicResource BtnSecondary}" 
+                            Click="Cancel_Click" Margin="0,0,8,0" TabIndex="6" IsCancel="True"/>
+                    <Button Grid.Column="1" x:Name="SaveBtn" Content="✓ Создать клиента" Style="{DynamicResource BtnPrimary}" 
+                            Click="Save_Click" Margin="8,0,0,0" TabIndex="5" IsDefault="True"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
