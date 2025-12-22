@@ -9,19 +9,31 @@ namespace HQStudio.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class OrdersController : ControllerBase
 {
     private readonly AppDbContext _db;
 
     public OrdersController(AppDbContext db) => _db = db;
 
+    private bool IsDesktopClient()
+    {
+        var clientType = Request.Headers["X-Client-Type"].FirstOrDefault();
+        return clientType?.Equals("Desktop", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
     [HttpGet]
-    public async Task<ActionResult<List<Order>>> GetAll(
+    public async Task<ActionResult<object>> GetAll(
         [FromQuery] OrderStatus? status = null, 
-        [FromQuery] int? limit = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
         [FromQuery] bool includeDeleted = false)
     {
+        // Для веб-клиентов требуется авторизация
+        if (!IsDesktopClient() && !User.Identity?.IsAuthenticated == true)
+        {
+            return Unauthorized(new { message = "Требуется авторизация" });
+        }
+
         var query = _db.Orders
             .Include(o => o.Client)
             .Include(o => o.OrderServices)
@@ -36,27 +48,33 @@ public class OrdersController : ControllerBase
 
         if (status.HasValue) query = query.Where(o => o.Status == status);
 
-        query = query.OrderByDescending(o => o.CreatedAt);
+        var total = await query.CountAsync();
         
-        // Ограничение для веб-клиентов (защита от выкачивания базы)
-        var clientType = Request.Headers["X-Client-Type"].FirstOrDefault();
-        var isDesktopClient = clientType?.Equals("Desktop", StringComparison.OrdinalIgnoreCase) == true;
-        
-        if (!isDesktopClient)
-        {
-            query = query.Take(20);
-        }
-        else if (limit.HasValue && limit > 0)
-        {
-            query = query.Take(limit.Value);
-        }
+        var items = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
 
-        return await query.ToListAsync();
+        return Ok(new
+        {
+            items,
+            total,
+            page,
+            pageSize,
+            totalPages = (int)Math.Ceiling(total / (double)pageSize)
+        });
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Order>> Get(int id)
     {
+        // Для веб-клиентов требуется авторизация
+        if (!IsDesktopClient() && !User.Identity?.IsAuthenticated == true)
+        {
+            return Unauthorized(new { message = "Требуется авторизация" });
+        }
+
         var order = await _db.Orders
             .Include(o => o.Client)
             .Include(o => o.OrderServices)
@@ -69,6 +87,12 @@ public class OrdersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Order>> Create(CreateOrderRequest request)
     {
+        // Для веб-клиентов требуется авторизация
+        if (!IsDesktopClient() && !User.Identity?.IsAuthenticated == true)
+        {
+            return Unauthorized(new { message = "Требуется авторизация" });
+        }
+
         var order = new Order
         {
             ClientId = request.ClientId,
@@ -100,6 +124,12 @@ public class OrdersController : ControllerBase
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] OrderStatus status)
     {
+        // Для веб-клиентов требуется авторизация
+        if (!IsDesktopClient() && !User.Identity?.IsAuthenticated == true)
+        {
+            return Unauthorized(new { message = "Требуется авторизация" });
+        }
+
         var order = await _db.Orders.FindAsync(id);
         if (order == null) return NotFound();
 
@@ -114,13 +144,27 @@ public class OrdersController : ControllerBase
     /// Soft delete - помечает заказ как удалённый, но не удаляет из базы
     /// </summary>
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
+        // Для веб-клиентов требуется авторизация с ролью Admin
+        if (!IsDesktopClient())
+        {
+            if (!User.Identity?.IsAuthenticated == true)
+            {
+                return Unauthorized(new { message = "Требуется авторизация" });
+            }
+            if (!User.IsInRole("Admin"))
+            {
+                return Forbid();
+            }
+        }
+
         var order = await _db.Orders.FindAsync(id);
         if (order == null) return NotFound();
         
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        var userId = User.Identity?.IsAuthenticated == true 
+            ? int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0")
+            : 0;
         
         // Soft delete - помечаем как удалённый
         order.IsDeleted = true;
@@ -135,9 +179,21 @@ public class OrdersController : ControllerBase
     /// Восстановление удалённого заказа
     /// </summary>
     [HttpPost("{id}/restore")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Restore(int id)
     {
+        // Для веб-клиентов требуется авторизация с ролью Admin
+        if (!IsDesktopClient())
+        {
+            if (!User.Identity?.IsAuthenticated == true)
+            {
+                return Unauthorized(new { message = "Требуется авторизация" });
+            }
+            if (!User.IsInRole("Admin"))
+            {
+                return Forbid();
+            }
+        }
+
         var order = await _db.Orders.FindAsync(id);
         if (order == null) return NotFound();
         
@@ -168,6 +224,47 @@ public class OrdersController : ControllerBase
         
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    /// <summary>
+    /// Удаление заказов без клиентов (очистка базы)
+    /// </summary>
+    [HttpDelete("cleanup/without-clients")]
+    public async Task<ActionResult<object>> CleanupOrdersWithoutClients()
+    {
+        // Только для Desktop клиента
+        if (!IsDesktopClient())
+        {
+            return Forbid();
+        }
+
+        var clientIds = await _db.Clients.Select(c => c.Id).ToListAsync();
+        
+        var ordersWithoutClients = await _db.Orders
+            .Include(o => o.OrderServices)
+            .Where(o => o.ClientId == 0 || !clientIds.Contains(o.ClientId))
+            .ToListAsync();
+
+        if (!ordersWithoutClients.Any())
+        {
+            return Ok(new { message = "Заказов без клиентов не найдено", deleted = 0 });
+        }
+
+        var deletedIds = ordersWithoutClients.Select(o => o.Id).ToList();
+        
+        foreach (var order in ordersWithoutClients)
+        {
+            _db.OrderServices.RemoveRange(order.OrderServices);
+        }
+        
+        _db.Orders.RemoveRange(ordersWithoutClients);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { 
+            message = $"Удалено {ordersWithoutClients.Count} заказов без клиентов", 
+            deleted = ordersWithoutClients.Count,
+            deletedIds 
+        });
     }
 }
 

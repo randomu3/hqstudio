@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace HQStudio.API.Models;
 
 public enum OrderStatus
@@ -24,12 +26,14 @@ public class Order
     public DateTime? DeletedAt { get; set; }
     public int? DeletedByUserId { get; set; }
     
+    [JsonIgnore]
     public ICollection<OrderService> OrderServices { get; set; } = new List<OrderService>();
 }
 
 public class OrderService
 {
     public int OrderId { get; set; }
+    [JsonIgnore]
     public Order Order { get; set; } = null!;
     public int ServiceId { get; set; }
     public Service Service { get; set; } = null!;
