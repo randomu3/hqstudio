@@ -12,10 +12,12 @@
     <Company>HQ Studio</Company>
     <Product>HQ Studio Desktop</Product>
     <Description>CRM система для автотюнинг студии</Description>
+    <Copyright>© $([System.DateTime]::Now.Year) HQ Studio. Все права защищены.</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
