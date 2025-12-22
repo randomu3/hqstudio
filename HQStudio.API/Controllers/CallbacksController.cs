@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using HQStudio.API.Data;
 using HQStudio.API.Models;
+using HQStudio.API.Services;
 using System.Security.Claims;
 
 namespace HQStudio.API.Controllers;
@@ -32,7 +33,7 @@ public class CallbacksController : ControllerBase
         var callback = new CallbackRequest
         {
             Name = request.Name.Trim(),
-            Phone = request.Phone.Trim(),
+            Phone = PhoneFormatter.Format(request.Phone.Trim()),
             CarModel = request.CarModel?.Trim(),
             LicensePlate = request.LicensePlate?.Trim()?.ToUpper(),
             Message = request.Message?.Trim(),
@@ -56,7 +57,7 @@ public class CallbacksController : ControllerBase
         var callback = new CallbackRequest
         {
             Name = request.Name,
-            Phone = request.Phone,
+            Phone = PhoneFormatter.Format(request.Phone),
             CarModel = request.CarModel,
             LicensePlate = request.LicensePlate,
             Message = request.Message,
@@ -151,7 +152,7 @@ public class CallbacksController : ControllerBase
             : 0;
 
         if (request.Name != null) callback.Name = request.Name;
-        if (request.Phone != null) callback.Phone = request.Phone;
+        if (request.Phone != null) callback.Phone = PhoneFormatter.Format(request.Phone);
         if (request.CarModel != null) callback.CarModel = request.CarModel;
         if (request.LicensePlate != null) callback.LicensePlate = request.LicensePlate;
         if (request.Message != null) callback.Message = request.Message;

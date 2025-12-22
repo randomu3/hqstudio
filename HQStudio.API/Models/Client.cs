@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace HQStudio.API.Models;
 
 public class Client
@@ -11,5 +13,6 @@ public class Client
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
+    [JsonIgnore]
     public ICollection<Order> Orders { get; set; } = new List<Order>();
 }
