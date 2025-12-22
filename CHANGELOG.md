@@ -1,3 +1,10 @@
+## [1.10.0](https://github.com/randomu3/hqstudio/compare/v1.9.1...v1.10.0) (2025-12-22)
+
+
+### 🚀 Новые возможности
+
+* **web:** добавлена загрузка подписок с API в админке ([aa59ccb](https://github.com/randomu3/hqstudio/commit/aa59ccbc2fd550d29c724bbbd092aa05835efcf6))
+
 ## [1.9.1](https://github.com/randomu3/hqstudio/compare/v1.9.0...v1.9.1) (2025-12-22)
 
 
