@@ -24,14 +24,28 @@ namespace HQStudio.ViewModels
         public string SelectedSource
         {
             get => _selectedSource;
-            set { SetProperty(ref _selectedSource, value); }
+            set 
+            { 
+                if (SetProperty(ref _selectedSource, value))
+                {
+                    CurrentPage = 1;
+                    _ = LoadActivityLogsAsync();
+                }
+            }
         }
 
         private ActivityUserStat? _selectedUser;
         public ActivityUserStat? SelectedUser
         {
             get => _selectedUser;
-            set { SetProperty(ref _selectedUser, value); }
+            set 
+            { 
+                if (SetProperty(ref _selectedUser, value))
+                {
+                    CurrentPage = 1;
+                    _ = LoadActivityLogsAsync();
+                }
+            }
         }
 
         private int _currentPage = 1;

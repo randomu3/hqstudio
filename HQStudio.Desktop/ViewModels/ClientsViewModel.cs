@@ -10,8 +10,12 @@ namespace HQStudio.ViewModels
     public class ClientsViewModel : BaseViewModel
     {
         private readonly DataService _dataService = DataService.Instance;
+        private readonly ApiService _apiService = ApiService.Instance;
+        private readonly SettingsService _settings = SettingsService.Instance;
+        
         private Client? _selectedClient;
         private string _searchText = string.Empty;
+        private List<Client> _allClients = new();
 
         public ObservableCollection<Client> Clients { get; } = new();
 
@@ -34,32 +38,52 @@ namespace HQStudio.ViewModels
         public ICommand AddClientCommand { get; }
         public ICommand EditClientCommand { get; }
         public ICommand DeleteClientCommand { get; }
+        public ICommand RefreshCommand { get; }
 
         public ClientsViewModel()
         {
-            AddClientCommand = new RelayCommand(_ => AddClient());
+            AddClientCommand = new RelayCommand(_ => AddClientAsync());
             EditClientCommand = new RelayCommand(_ => EditClient(), _ => SelectedClient != null);
             DeleteClientCommand = new RelayCommand(_ => DeleteClient(), _ => SelectedClient != null);
-            LoadClients();
+            RefreshCommand = new RelayCommand(async _ => await LoadClientsAsync());
+            _ = LoadClientsAsync();
         }
 
-        private void LoadClients()
+        private async Task LoadClientsAsync()
         {
-            Clients.Clear();
-            foreach (var client in _dataService.Clients.OrderByDescending(c => c.CreatedAt))
+            _allClients.Clear();
+            
+            if (_settings.UseApi && _apiService.IsConnected)
             {
-                Clients.Add(client);
+                var apiClients = await _apiService.GetClientsAsync();
+                _allClients = apiClients.Select(c => new Client
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Phone = c.Phone,
+                    Car = c.CarModel ?? "",
+                    CarNumber = c.LicensePlate ?? "",
+                    Notes = c.Notes ?? "",
+                    CreatedAt = c.CreatedAt
+                }).ToList();
             }
+            else
+            {
+                _allClients = _dataService.Clients.ToList();
+            }
+            
+            FilterClients();
         }
 
         private void FilterClients()
         {
             Clients.Clear();
+            
             var filtered = string.IsNullOrEmpty(SearchText)
-                ? _dataService.Clients
-                : _dataService.Clients.Where(c =>
+                ? _allClients
+                : _allClients.Where(c =>
                     c.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
-                    c.Phone.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                    c.Phone.Replace(" ", "").Replace("-", "").Contains(SearchText.Replace(" ", "").Replace("-", ""), StringComparison.OrdinalIgnoreCase) ||
                     c.Car.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                     c.CarNumber.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
@@ -69,18 +93,55 @@ namespace HQStudio.ViewModels
             }
         }
 
-        private void AddClient()
+        private async void AddClientAsync()
         {
             var dialog = new EditClientDialog();
             dialog.Owner = Application.Current.MainWindow;
             
             if (dialog.ShowDialog() == true)
             {
-                dialog.Client.Id = _dataService.GetNextId(_dataService.Clients);
-                dialog.Client.CreatedAt = DateTime.Now;
-                _dataService.Clients.Add(dialog.Client);
-                _dataService.SaveData();
-                LoadClients();
+                // Проверка на дубликат локально
+                var normalizedPhone = dialog.Client.Phone.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
+                var existingClient = _allClients.FirstOrDefault(c => 
+                    c.Phone.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "") == normalizedPhone);
+                
+                if (existingClient != null)
+                {
+                    MessageBox.Show(
+                        $"Клиент с таким номером телефона уже существует:\n{existingClient.Name}\n\nИспользуйте существующего клиента для создания заказа.",
+                        "Дубликат клиента",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+                
+                if (_settings.UseApi && _apiService.IsConnected)
+                {
+                    var apiClient = new ApiClient
+                    {
+                        Name = dialog.Client.Name,
+                        Phone = dialog.Client.Phone,
+                        CarModel = dialog.Client.Car,
+                        LicensePlate = dialog.Client.CarNumber,
+                        Notes = dialog.Client.Notes
+                    };
+                    
+                    var (created, error) = await _apiService.CreateClientAsync(apiClient);
+                    if (created == null)
+                    {
+                        MessageBox.Show(error ?? "Не удалось создать клиента", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                }
+                else
+                {
+                    dialog.Client.Id = _dataService.GetNextId(_dataService.Clients);
+                    dialog.Client.CreatedAt = DateTime.Now;
+                    _dataService.Clients.Add(dialog.Client);
+                    _dataService.SaveData();
+                }
+                
+                await LoadClientsAsync();
             }
         }
 
@@ -94,7 +155,7 @@ namespace HQStudio.ViewModels
             if (dialog.ShowDialog() == true)
             {
                 _dataService.SaveData();
-                LoadClients();
+                _ = LoadClientsAsync();
             }
         }
 
@@ -112,7 +173,7 @@ namespace HQStudio.ViewModels
             {
                 _dataService.Clients.Remove(SelectedClient);
                 _dataService.SaveData();
-                LoadClients();
+                _ = LoadClientsAsync();
             }
         }
     }
