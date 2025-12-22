@@ -10,11 +10,16 @@ namespace HQStudio.Views.Dialogs
     public partial class EditOrderDialog : Window
     {
         private readonly DataService _dataService = DataService.Instance;
+        private readonly ApiService _apiService = ApiService.Instance;
+        private readonly SettingsService _settings = SettingsService.Instance;
+        
         public Order Order { get; private set; }
         public bool IsNew { get; }
         
         private ObservableCollection<Service> _selectedServices = new();
         private List<Service> _allServices = new();
+        private List<Client> _allClients = new();
+        private Client? _selectedClient;
 
         public EditOrderDialog(Order? order = null)
         {
@@ -26,17 +31,42 @@ namespace HQStudio.Views.Dialogs
             _allServices = _dataService.Services.Where(s => s.IsActive).ToList();
             
             SelectedServicesList.ItemsSource = _selectedServices;
-            LoadData();
+            
+            // Загружаем данные синхронно при открытии
+            Loaded += async (s, e) => await LoadDataAsync();
         }
 
-        private void LoadData()
+        private async Task LoadDataAsync()
         {
-            // Load clients
-            ClientCombo.ItemsSource = _dataService.Clients;
+            // Load clients from API or local
+            if (_settings.UseApi && _apiService.IsConnected)
+            {
+                var apiClients = await _apiService.GetClientsAsync();
+                _allClients = apiClients.Select(c => new Client
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Phone = c.Phone,
+                    Car = c.CarModel ?? "",
+                    CarNumber = c.LicensePlate ?? ""
+                }).ToList();
+                System.Diagnostics.Debug.WriteLine($"Loaded {_allClients.Count} clients from API");
+            }
+            else
+            {
+                _allClients = _dataService.Clients.ToList();
+                System.Diagnostics.Debug.WriteLine($"Loaded {_allClients.Count} clients from local");
+            }
+
+            // Set selected client if editing
             if (Order.ClientId > 0)
-                ClientCombo.SelectedItem = _dataService.Clients.FirstOrDefault(c => c.Id == Order.ClientId);
-            else if (_dataService.Clients.Any())
-                ClientCombo.SelectedIndex = 0;
+            {
+                _selectedClient = _allClients.FirstOrDefault(c => c.Id == Order.ClientId);
+                if (_selectedClient != null)
+                {
+                    ShowSelectedClient(_selectedClient);
+                }
+            }
 
             // Load selected services
             _selectedServices.Clear();
@@ -57,6 +87,106 @@ namespace HQStudio.Views.Dialogs
 
             PriceBox.Text = Order.TotalPrice.ToString();
             NotesBox.Text = Order.Notes;
+        }
+
+        private void ClientSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var searchText = ClientSearchBox.Text.Trim().ToLower();
+            ClientSearchPlaceholder.Visibility = string.IsNullOrEmpty(searchText) ? Visibility.Visible : Visibility.Collapsed;
+            
+            if (_allClients.Count == 0)
+            {
+                System.Diagnostics.Debug.WriteLine("No clients loaded yet");
+                ClientPopup.IsOpen = false;
+                return;
+            }
+            
+            // Если поле пустое - показываем всех клиентов
+            if (string.IsNullOrEmpty(searchText))
+            {
+                ClientSearchResults.ItemsSource = _allClients.Take(10).ToList();
+                ClientPopup.IsOpen = true;
+                return;
+            }
+
+            // Поиск по имени и телефону (нормализуем телефон для поиска)
+            var normalizedSearch = searchText.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "");
+            
+            var results = _allClients
+                .Where(c => 
+                    c.Name.ToLower().Contains(searchText) || 
+                    c.Phone.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "").Replace("+", "").Contains(normalizedSearch) ||
+                    (!string.IsNullOrEmpty(c.Car) && c.Car.ToLower().Contains(searchText)) ||
+                    (!string.IsNullOrEmpty(c.CarNumber) && c.CarNumber.ToLower().Contains(searchText)))
+                .Take(10)
+                .ToList();
+
+            System.Diagnostics.Debug.WriteLine($"Search '{searchText}' found {results.Count} clients from {_allClients.Count} total");
+
+            if (results.Any())
+            {
+                ClientSearchResults.ItemsSource = results;
+                ClientPopup.IsOpen = true;
+            }
+            else
+            {
+                ClientPopup.IsOpen = false;
+            }
+        }
+
+        private void ClientSearchBox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            ClientSearchPlaceholder.Visibility = Visibility.Collapsed;
+            
+            // Показываем всех клиентов при фокусе если поле пустое
+            if (string.IsNullOrEmpty(ClientSearchBox.Text) && _allClients.Count > 0)
+            {
+                ClientSearchResults.ItemsSource = _allClients.Take(10).ToList();
+                ClientPopup.IsOpen = true;
+            }
+        }
+
+        private void ClientSearchBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(ClientSearchBox.Text))
+                ClientSearchPlaceholder.Visibility = Visibility.Visible;
+            
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!ClientPopup.IsMouseOver)
+                    ClientPopup.IsOpen = false;
+            }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        private void ClientItem_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is Client client)
+            {
+                _selectedClient = client;
+                ShowSelectedClient(client);
+                ClientSearchBox.Text = "";
+                ClientPopup.IsOpen = false;
+            }
+        }
+
+        private void ShowSelectedClient(Client client)
+        {
+            SelectedClientName.Text = client.Name;
+            SelectedClientInfo.Text = $"📞 {client.Phone}" + 
+                (string.IsNullOrEmpty(client.Car) ? "" : $" • {client.Car}");
+            SelectedClientBorder.Visibility = Visibility.Visible;
+            ClientSearchBox.Visibility = Visibility.Collapsed;
+            ClientSearchPlaceholder.Visibility = Visibility.Collapsed;
+        }
+
+        private void ClearClient_Click(object sender, RoutedEventArgs e)
+        {
+            _selectedClient = null;
+            SelectedClientBorder.Visibility = Visibility.Collapsed;
+            ClientSearchBox.Visibility = Visibility.Visible;
+            ClientSearchBox.Text = "";
+            ClientSearchPlaceholder.Visibility = Visibility.Visible;
+            ClientSearchBox.Focus();
         }
 
         private void ServiceSearch_TextChanged(object sender, TextChangedEventArgs e)
@@ -144,14 +274,22 @@ namespace HQStudio.Views.Dialogs
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            if (ClientCombo.SelectedItem is not Client client)
+            if (_selectedClient == null)
             {
-                MessageBox.Show("Выберите клиента", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Выберите клиента. Это обязательное поле.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ClientSearchBox.Focus();
                 return;
             }
 
-            Order.ClientId = client.Id;
-            Order.Client = client;
+            if (_selectedServices.Count == 0)
+            {
+                MessageBox.Show("Добавьте хотя бы одну услугу.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ServiceSearchBox.Focus();
+                return;
+            }
+
+            Order.ClientId = _selectedClient.Id;
+            Order.Client = _selectedClient;
             
             // Save services
             Order.ServiceIds = _selectedServices.Select(s => s.Id).ToList();

@@ -34,9 +34,85 @@
             <!-- Form -->
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="24,20">
                 <StackPanel>
-                    <TextBlock Text="КЛИЕНТ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
-                    <ComboBox x:Name="ClientCombo" Style="{DynamicResource InputComboBox}" Margin="0,0,0,16"
-                              DisplayMemberPath="Name"/>
+                    <TextBlock Text="КЛИЕНТ *" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                    
+                    <!-- Client Search -->
+                    <Grid Margin="0,0,0,8">
+                        <TextBox x:Name="ClientSearchBox" Style="{DynamicResource InputText}" 
+                                 TextChanged="ClientSearch_TextChanged"
+                                 GotFocus="ClientSearchBox_GotFocus"
+                                 LostFocus="ClientSearchBox_LostFocus"/>
+                        <TextBlock x:Name="ClientSearchPlaceholder" Text="🔍 Поиск по имени или телефону..." 
+                                   Foreground="{DynamicResource TextMutedBrush}" 
+                                   VerticalAlignment="Center" Margin="16,0" IsHitTestVisible="False"/>
+                    </Grid>
+                    
+                    <!-- Client Search Results Popup -->
+                    <Popup x:Name="ClientPopup" PlacementTarget="{Binding ElementName=ClientSearchBox}" 
+                           Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                        <Border Background="{DynamicResource BgCardBrush}" CornerRadius="8" 
+                                BorderBrush="{DynamicResource BorderDefaultBrush}" BorderThickness="1"
+                                MaxHeight="250" Width="{Binding ActualWidth, ElementName=ClientSearchBox}">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="ClientSearchResults">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border x:Name="ClientItemBorder" Background="Transparent" 
+                                                    Padding="12,10" Cursor="Hand"
+                                                    MouseLeftButtonDown="ClientItem_Click">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="30"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="👤" FontSize="16" VerticalAlignment="Center"/>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                        <TextBlock FontSize="12" Foreground="{DynamicResource TextMutedBrush}">
+                                                            <Run Text="📞"/>
+                                                            <Run Text="{Binding Phone}"/>
+                                                            <Run Text=" • "/>
+                                                            <Run Text="{Binding Car}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="ClientItemBorder" Property="Background" 
+                                                            Value="{DynamicResource BgHoverBrush}"/>
+                                                </Trigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+                    </Popup>
+                    
+                    <!-- Selected Client Display -->
+                    <Border x:Name="SelectedClientBorder" Background="{DynamicResource BgHoverBrush}" 
+                            CornerRadius="8" Padding="12,10" Margin="0,0,0,16" Visibility="Collapsed">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="30"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="👤" FontSize="16" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock x:Name="SelectedClientName" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock x:Name="SelectedClientInfo" FontSize="12" 
+                                           Foreground="{DynamicResource TextMutedBrush}"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Content="✕" Width="28" Height="28" 
+                                    Background="Transparent" Foreground="#808080" 
+                                    BorderThickness="0" Cursor="Hand" FontSize="12"
+                                    Click="ClearClient_Click" ToolTip="Очистить"/>
+                        </Grid>
+                    </Border>
 
                     <TextBlock Text="УСЛУГИ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
                     
