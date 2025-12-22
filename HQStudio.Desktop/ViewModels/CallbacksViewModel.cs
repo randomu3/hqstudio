@@ -1,5 +1,8 @@
+using HQStudio.Models;
 using HQStudio.Services;
+using HQStudio.Views.Dialogs;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
@@ -75,6 +78,7 @@ namespace HQStudio.ViewModels
         public ICommand CreateClientCommand { get; }
         public ICommand CreateOrderCommand { get; }
         public ICommand DeleteCommand { get; }
+        public ICommand OpenCallbackCommand { get; }
 
         public CallbacksViewModel()
         {
@@ -86,6 +90,7 @@ namespace HQStudio.ViewModels
             CreateClientCommand = new RelayCommand(async _ => await CreateClientFromCallbackAsync(), _ => SelectedCallback != null);
             CreateOrderCommand = new RelayCommand(_ => CreateOrderFromCallback(), _ => SelectedCallback != null);
             DeleteCommand = new RelayCommand(async _ => await DeleteCallbackAsync(), _ => SelectedCallback != null);
+            OpenCallbackCommand = new RelayCommand(_ => OpenCallback(), _ => SelectedCallback != null);
 
             _ = LoadDataAsync();
         }
@@ -214,46 +219,200 @@ namespace HQStudio.ViewModels
         {
             if (SelectedCallback == null) return;
 
-            // Проверяем, нет ли уже клиента с таким телефоном
-            var existingClients = await _apiService.GetClientsAsync();
-            var existing = existingClients.FirstOrDefault(c => c.Phone == SelectedCallback.Phone);
-
-            if (existing != null)
+            var dialog = new CreateClientFromCallbackDialog(SelectedCallback)
             {
-                MessageBox.Show($"Клиент с телефоном {SelectedCallback.Phone} уже существует:\n{existing.Name}",
-                    "Клиент найден", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                Owner = Application.Current.MainWindow
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                ApiClient? clientForOrder = null;
+                
+                if (dialog.LinkedToExisting && dialog.LinkedClient != null)
+                {
+                    // Привязали к существующему клиенту
+                    clientForOrder = dialog.LinkedClient;
+                    
+                    // Обновляем статус заявки на "В работе"
+                    await _apiService.UpdateCallbackStatusAsync(SelectedCallback.Id, "Processing");
+                    
+                    // Спрашиваем о создании заказа
+                    var createOrder = MessageBox.Show(
+                        $"Заявка привязана к клиенту {dialog.LinkedClient.Name}.\n\nСоздать заказ для этого клиента?",
+                        "Заявка привязана",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+                    
+                    if (createOrder == MessageBoxResult.Yes)
+                    {
+                        OpenOrderDialogForClient(clientForOrder);
+                    }
+                }
+                else if (dialog.CreatedClient != null)
+                {
+                    // Создали нового клиента
+                    clientForOrder = dialog.CreatedClient;
+                    
+                    // Обновляем статус заявки на "В работе"
+                    await _apiService.UpdateCallbackStatusAsync(SelectedCallback.Id, "Processing");
+                    
+                    // Если пользователь хочет создать заказ
+                    if (dialog.CreateOrderAfterClient)
+                    {
+                        OpenOrderDialogForClient(clientForOrder);
+                    }
+                }
+
+                await LoadDataAsync();
             }
+        }
 
-            var result = MessageBox.Show(
-                $"Создать клиента из заявки?\n\nИмя: {SelectedCallback.Name}\nТелефон: {SelectedCallback.Phone}\nАвто: {SelectedCallback.CarModel ?? "Не указано"}\nГосномер: {SelectedCallback.LicensePlate ?? "Не указан"}",
-                "Создание клиента",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+        // Событие для навигации к заказам
+        public event Action<int>? NavigateToOrder;
 
-            if (result == MessageBoxResult.Yes)
+        private async void OpenOrderDialogForClient(ApiClient client)
+        {
+            // Конвертируем ApiClient в локальную модель Client для диалога
+            var localClient = new Client
             {
-                var client = await _apiService.CreateClientAsync(new ApiClient
+                Id = client.Id,
+                Name = client.Name,
+                Phone = client.Phone,
+                Car = client.CarModel ?? "",
+                CarNumber = client.LicensePlate ?? "",
+                Notes = client.Notes ?? ""
+            };
+            
+            // Добавляем клиента в DataService если его там нет
+            var dataService = DataService.Instance;
+            if (!dataService.Clients.Any(c => c.Id == client.Id))
+            {
+                dataService.Clients.Add(localClient);
+            }
+            
+            // Создаём новый заказ с предустановленным клиентом
+            var order = new Order
+            {
+                ClientId = client.Id,
+                Client = localClient,
+                Status = "Новый",
+                Notes = SelectedCallback != null 
+                    ? $"Создан из заявки #{SelectedCallback.Id} ({SelectedCallback.Source})"
+                    : ""
+            };
+            
+            var orderDialog = new EditOrderDialog(order)
+            {
+                Owner = Application.Current.MainWindow
+            };
+            
+            if (orderDialog.ShowDialog() == true)
+            {
+                int? createdOrderId = null;
+                
+                // Сохраняем заказ через API если подключены
+                if (_settings.UseApi && _apiService.IsConnected)
                 {
-                    Name = SelectedCallback.Name,
-                    Phone = SelectedCallback.Phone,
-                    CarModel = SelectedCallback.CarModel,
-                    LicensePlate = SelectedCallback.LicensePlate,
-                    Notes = $"Создан из заявки #{SelectedCallback.Id} ({SelectedCallback.Source})"
-                });
-
-                if (client != null)
+                    var request = new CreateOrderRequest
+                    {
+                        ClientId = orderDialog.Order.ClientId,
+                        ServiceIds = orderDialog.Order.ServiceIds,
+                        TotalPrice = orderDialog.Order.TotalPrice,
+                        Notes = orderDialog.Order.Notes
+                    };
+                    
+                    var created = await _apiService.CreateOrderAsync(request);
+                    if (created != null)
+                    {
+                        createdOrderId = created.Id;
+                    }
+                }
+                else
                 {
-                    MessageBox.Show($"Клиент {client.Name} успешно создан!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    var savedOrder = orderDialog.Order;
+                    savedOrder.Id = dataService.GetNextId(dataService.Orders);
+                    savedOrder.CreatedAt = DateTime.Now;
+                    dataService.Orders.Add(savedOrder);
+                    dataService.SaveData();
+                    createdOrderId = savedOrder.Id;
+                }
+                
+                if (createdOrderId.HasValue)
+                {
+                    var goToOrder = ConfirmDialog.Show(
+                        "Заказ создан",
+                        $"Заказ #{createdOrderId} успешно создан!\n\nПерейти к заказу?",
+                        ConfirmDialog.DialogType.Success,
+                        "Перейти к заказу", "Остаться здесь");
+                    
+                    if (goToOrder)
+                    {
+                        NavigateToOrder?.Invoke(createdOrderId.Value);
+                    }
+                }
+                else
+                {
+                    ConfirmDialog.ShowInfo("Ошибка", "Не удалось создать заказ", ConfirmDialog.DialogType.Error);
                 }
             }
         }
 
-        private void CreateOrderFromCallback()
+        private async void CreateOrderFromCallback()
         {
             if (SelectedCallback == null) return;
-            // TODO: Открыть диалог создания заказа с предзаполненными данными
-            MessageBox.Show("Функция создания заказа из заявки будет добавлена", "В разработке", MessageBoxButton.OK, MessageBoxImage.Information);
+            
+            // Ищем клиента по телефону
+            var clients = await _apiService.GetClientsAsync();
+            var phone = NormalizePhone(SelectedCallback.Phone);
+            
+            var existingClient = clients.FirstOrDefault(c => 
+                NormalizePhone(c.Phone) == phone ||
+                NormalizePhone(c.Phone).Contains(phone) ||
+                phone.Contains(NormalizePhone(c.Phone)));
+
+            if (existingClient != null)
+            {
+                OpenOrderDialogForClient(existingClient);
+            }
+            else
+            {
+                ConfirmDialog.ShowInfo(
+                    "Клиент не найден",
+                    "Сначала создайте клиента из этой заявки.\n\nНажмите кнопку \"Создать клиента\".",
+                    ConfirmDialog.DialogType.Warning);
+            }
+        }
+
+        private static string NormalizePhone(string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return "";
+            return new string(phone.Where(char.IsDigit).ToArray());
+        }
+
+        private async void OpenCallback()
+        {
+            if (SelectedCallback == null) return;
+            
+            var dialog = new CallbackDetailsDialog(SelectedCallback)
+            {
+                Owner = Application.Current.MainWindow
+            };
+            
+            if (dialog.ShowDialog() == true)
+            {
+                if (dialog.CreateClientRequested)
+                {
+                    // Открываем диалог создания клиента
+                    await CreateClientFromCallbackAsync();
+                }
+                else if (dialog.CreateOrderRequested && dialog.ExistingClient != null)
+                {
+                    // Открываем диалог создания заказа с существующим клиентом
+                    OpenOrderDialogForClient(dialog.ExistingClient);
+                    await _apiService.UpdateCallbackStatusAsync(SelectedCallback.Id, "Processing");
+                    await LoadDataAsync();
+                }
+            }
         }
 
         private async Task DeleteCallbackAsync()

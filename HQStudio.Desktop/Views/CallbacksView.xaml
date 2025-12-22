@@ -1,6 +1,7 @@
 <UserControl x:Class="HQStudio.Views.CallbacksView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
     
     <Grid>
         <Grid.RowDefinitions>
@@ -123,6 +124,11 @@
                 <DataGrid ItemsSource="{Binding Callbacks}" SelectedItem="{Binding SelectedCallback}"
                           AutoGenerateColumns="False" IsReadOnly="True"
                           Style="{DynamicResource DataGridStyle}">
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="MouseDoubleClick">
+                            <i:InvokeCommandAction Command="{Binding OpenCallbackCommand}"/>
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Дата" Binding="{Binding FormattedDate}" Width="120"/>
                         <DataGridTemplateColumn Header="Источник" Width="90">
