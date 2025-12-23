@@ -164,8 +164,13 @@ namespace HQStudio.Services
         {
             try
             {
-                var result = await _http.GetFromJsonAsync<List<ApiServiceItem>>($"/api/services?activeOnly={activeOnly}");
-                return result ?? new();
+                var response = await _http.GetAsync($"/api/services?activeOnly={activeOnly}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync();
+                    return JsonSerializer.Deserialize<List<ApiServiceItem>>(json, _jsonOptions) ?? new();
+                }
+                return new();
             }
             catch { return new(); }
         }
@@ -174,9 +179,14 @@ namespace HQStudio.Services
         {
             try
             {
-                var response = await _http.PostAsJsonAsync("/api/services", service);
+                var json = JsonSerializer.Serialize(service, _jsonOptions);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await _http.PostAsync("/api/services", content);
                 if (response.IsSuccessStatusCode)
-                    return await response.Content.ReadFromJsonAsync<ApiServiceItem>();
+                {
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    return JsonSerializer.Deserialize<ApiServiceItem>(responseJson, _jsonOptions);
+                }
             }
             catch { }
             return null;
@@ -186,10 +196,28 @@ namespace HQStudio.Services
         {
             try
             {
-                var response = await _http.PutAsJsonAsync($"/api/services/{id}", service);
+                var json = JsonSerializer.Serialize(service, _jsonOptions);
+                System.Diagnostics.Debug.WriteLine($"[Desktop API] UpdateService {id}: JSON={json}");
+                System.Diagnostics.Debug.WriteLine($"[Desktop API] UpdateService {id}: Icon={service.Icon}");
+                
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await _http.PutAsync($"/api/services/{id}", content);
+                
+                System.Diagnostics.Debug.WriteLine($"[Desktop API] UpdateService {id}: Response={response.StatusCode}");
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[Desktop API] UpdateService {id}: Error={errorBody}");
+                }
+                
                 return response.IsSuccessStatusCode;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Desktop API] UpdateService {id}: Exception={ex.Message}");
+                return false;
+            }
         }
 
         public async Task<bool> DeleteServiceAsync(int id)
@@ -620,6 +648,7 @@ namespace HQStudio.Services
         public string Description { get; set; } = "";
         public string Price { get; set; } = "";
         public string? Image { get; set; }
+        public string Icon { get; set; } = "🔧";
         public bool IsActive { get; set; } = true;
         public int SortOrder { get; set; }
     }

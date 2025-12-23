@@ -10,6 +10,7 @@ public class Service
     public string Description { get; set; } = string.Empty;
     public string Price { get; set; } = string.Empty;
     public string? Image { get; set; }
+    public string Icon { get; set; } = "🔧";
     public bool IsActive { get; set; } = true;
     public int SortOrder { get; set; }
     

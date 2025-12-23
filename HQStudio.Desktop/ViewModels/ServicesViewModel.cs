@@ -87,7 +87,7 @@ namespace HQStudio.ViewModels
                         Description = s.Description,
                         Category = s.Category,
                         PriceFrom = ParsePrice(s.Price),
-                        Icon = s.Image ?? "",
+                        Icon = string.IsNullOrEmpty(s.Icon) ? "🔧" : s.Icon,
                         IsActive = s.IsActive
                     }).ToList();
                 }
@@ -156,7 +156,7 @@ namespace HQStudio.ViewModels
                         Description = dialog.Service.Description,
                         Category = dialog.Service.Category,
                         Price = dialog.Service.PriceFrom > 0 ? $"от {dialog.Service.PriceFrom:N0} ₽" : "",
-                        Image = dialog.Service.Icon,
+                        Icon = dialog.Service.Icon,
                         IsActive = dialog.Service.IsActive,
                         SortOrder = _allServices.Count
                     };
@@ -188,23 +188,38 @@ namespace HQStudio.ViewModels
             
             if (dialog.ShowDialog() == true)
             {
-                if (_settings.UseApi && _apiService.IsConnected)
+                if (_settings.UseApi)
                 {
-                    var apiService = new ApiServiceItem
+                    // Проверяем соединение перед обновлением
+                    if (!_apiService.IsConnected)
                     {
-                        Id = dialog.Service.Id,
-                        Title = dialog.Service.Name,
-                        Description = dialog.Service.Description,
-                        Category = dialog.Service.Category,
-                        Price = dialog.Service.PriceFrom > 0 ? $"от {dialog.Service.PriceFrom:N0} ₽" : "",
-                        Image = dialog.Service.Icon,
-                        IsActive = dialog.Service.IsActive
-                    };
+                        await _apiService.CheckConnectionAsync();
+                    }
                     
-                    var success = await _apiService.UpdateServiceAsync(dialog.Service.Id, apiService);
-                    if (!success)
+                    if (_apiService.IsConnected)
                     {
-                        MessageBox.Show("Не удалось обновить услугу", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        var apiService = new ApiServiceItem
+                        {
+                            Id = dialog.Service.Id,
+                            Title = dialog.Service.Name,
+                            Description = dialog.Service.Description,
+                            Category = dialog.Service.Category,
+                            Price = dialog.Service.PriceFrom > 0 ? $"от {dialog.Service.PriceFrom:N0} ₽" : "",
+                            Icon = dialog.Service.Icon,
+                            IsActive = dialog.Service.IsActive
+                        };
+                        
+                        var success = await _apiService.UpdateServiceAsync(dialog.Service.Id, apiService);
+                        
+                        if (!success)
+                        {
+                            MessageBox.Show("Не удалось обновить услугу", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Нет соединения с сервером", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                 }

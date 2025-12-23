@@ -121,6 +121,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -153,6 +154,57 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
+    
+    // Автоматическая миграция: добавление колонки Icon в Services если её нет
+    try
+    {
+        var connection = db.Database.GetDbConnection();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        
+        if (connectionString.Contains("Host="))
+        {
+            // PostgreSQL
+            command.CommandText = @"
+                DO $$ 
+                BEGIN 
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='Services' AND column_name='Icon') THEN
+                        ALTER TABLE ""Services"" ADD COLUMN ""Icon"" TEXT NOT NULL DEFAULT '🔧';
+                    END IF;
+                END $$;";
+        }
+        else
+        {
+            // SQLite - проверяем наличие колонки
+            command.CommandText = "PRAGMA table_info(Services)";
+            var hasIconColumn = false;
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    if (reader.GetString(1) == "Icon")
+                    {
+                        hasIconColumn = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!hasIconColumn)
+            {
+                using var alterCommand = connection.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Services ADD COLUMN Icon TEXT NOT NULL DEFAULT '🔧'";
+                alterCommand.ExecuteNonQuery();
+                Console.WriteLine("Добавлена колонка Icon в таблицу Services");
+            }
+        }
+        
+        connection.Close();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Миграция Icon: {ex.Message}");
+    }
     
     // Команда очистки заказов без клиентов
     if (args.Contains("--cleanup-orders"))
@@ -298,8 +350,8 @@ using (var scope = app.Services.CreateScope())
                 foreach (var service in importData.Services)
                 {
                     db.Database.ExecuteSqlRaw(
-                        "INSERT INTO \"Services\" (\"Id\", \"Title\", \"Category\", \"Description\", \"Price\", \"Image\", \"IsActive\", \"SortOrder\") OVERRIDING SYSTEM VALUE VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7})",
-                        service.Id, service.Title, service.Category, service.Description, service.Price, service.Image, service.IsActive, service.SortOrder);
+                        "INSERT INTO \"Services\" (\"Id\", \"Title\", \"Category\", \"Description\", \"Price\", \"Image\", \"Icon\", \"IsActive\", \"SortOrder\") OVERRIDING SYSTEM VALUE VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8})",
+                        service.Id, service.Title, service.Category, service.Description, service.Price, service.Image, service.Icon, service.IsActive, service.SortOrder);
                 }
                 Console.WriteLine($"  Services: {importData.Services.Count}");
             }

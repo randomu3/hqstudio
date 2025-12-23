@@ -98,6 +98,99 @@ public class ServicesControllerTests : IClassFixture<TestWebApplicationFactory>
         created!.Title.Should().Be("New Service");
     }
 
+    [Fact]
+    public async Task Update_WithDesktopClient_UpdatesServiceIcon()
+    {
+        // Arrange - добавляем заголовок Desktop клиента
+        _client.DefaultRequestHeaders.Add("X-Client-Type", "Desktop");
+        
+        // Сначала получаем существующую услугу
+        var getResponse = await _client.GetAsync("/api/services/1");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var existingService = await getResponse.Content.ReadFromJsonAsync<Service>();
+        existingService.Should().NotBeNull();
+        
+        // Меняем иконку (PascalCase как ожидает API)
+        var updatedService = new 
+        { 
+            Id = existingService!.Id,
+            Title = existingService.Title,
+            Category = existingService.Category,
+            Description = existingService.Description,
+            Price = existingService.Price,
+            Image = existingService.Image,
+            Icon = "🎨",  // Новая иконка
+            IsActive = existingService.IsActive,
+            SortOrder = existingService.SortOrder
+        };
+
+        // Act
+        var response = await _client.PutAsJsonAsync($"/api/services/{existingService.Id}", updatedService);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        // Проверяем что иконка обновилась
+        var verifyResponse = await _client.GetAsync($"/api/services/{existingService.Id}");
+        var verifiedService = await verifyResponse.Content.ReadFromJsonAsync<Service>();
+        verifiedService!.Icon.Should().Be("🎨");
+    }
+
+    [Fact]
+    public async Task Update_WithMismatchedId_ReturnsBadRequest()
+    {
+        // Arrange
+        _client.DefaultRequestHeaders.Add("X-Client-Type", "Desktop");
+        var service = new { Id = 999, Title = "Test", Category = "Test", Description = "Test", Price = "100", Icon = "🔧", IsActive = true, SortOrder = 0 };
+
+        // Act
+        var response = await _client.PutAsJsonAsync("/api/services/1", service);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Update_WithDesktopClient_UpdatesAllFields()
+    {
+        // Arrange - эмулируем точно то, что делает Desktop клиент
+        _client.DefaultRequestHeaders.Add("X-Client-Type", "Desktop");
+        
+        // Сначала получаем существующую услугу
+        var getResponse = await _client.GetAsync("/api/services/1");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var existingService = await getResponse.Content.ReadFromJsonAsync<Service>();
+        existingService.Should().NotBeNull();
+        
+        // Создаём объект как в Desktop клиенте (PascalCase)
+        var updatedService = new 
+        { 
+            Id = existingService!.Id,
+            Title = "Обновлённая услуга",
+            Category = "Новая категория",
+            Description = "Новое описание",
+            Price = "от 20000 ₽",
+            Image = (string?)null,
+            Icon = "🚗",
+            IsActive = true,
+            SortOrder = existingService.SortOrder
+        };
+
+        // Act
+        var response = await _client.PutAsJsonAsync($"/api/services/{existingService.Id}", updatedService);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        // Проверяем что все поля обновились
+        var verifyResponse = await _client.GetAsync($"/api/services/{existingService.Id}");
+        var verifiedService = await verifyResponse.Content.ReadFromJsonAsync<Service>();
+        verifiedService!.Title.Should().Be("Обновлённая услуга");
+        verifiedService.Category.Should().Be("Новая категория");
+        verifiedService.Description.Should().Be("Новое описание");
+        verifiedService.Icon.Should().Be("🚗");
+    }
+
     private async Task AuthenticateAsync()
     {
         var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "admin"));

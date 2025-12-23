@@ -7,7 +7,7 @@ namespace HQStudio.Models
         public string Description { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public decimal PriceFrom { get; set; }
-        public string Icon { get; set; } = string.Empty;
+        public string Icon { get; set; } = "🔧";
         public bool IsActive { get; set; } = true;
     }
 }
