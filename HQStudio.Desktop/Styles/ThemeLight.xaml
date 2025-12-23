@@ -621,4 +621,17 @@
         </Setter>
     </Style>
 
+    <!-- ============================================== -->
+    <!-- LEGACY BUTTON ALIASES                          -->
+    <!-- ============================================== -->
+
+    <!-- ButtonPrimary - alias for BtnPrimary -->
+    <Style x:Key="ButtonPrimary" TargetType="Button" BasedOn="{StaticResource BtnPrimary}"/>
+    
+    <!-- ButtonSecondary - alias for BtnSecondary -->
+    <Style x:Key="ButtonSecondary" TargetType="Button" BasedOn="{StaticResource BtnSecondary}"/>
+    
+    <!-- SecondaryButton - alias for BtnSecondary -->
+    <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource BtnSecondary}"/>
+
 </ResourceDictionary>
