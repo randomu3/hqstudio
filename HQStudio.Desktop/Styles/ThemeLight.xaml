@@ -35,6 +35,17 @@
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}"/>
     <SolidColorBrush x:Key="TextDarkBrush" Color="{StaticResource TextDark}"/>
+    <SolidColorBrush x:Key="AccentGreenBrush" Color="{StaticResource AccentGreen}"/>
+    <SolidColorBrush x:Key="AccentRedBrush" Color="{StaticResource AccentRed}"/>
+    <SolidColorBrush x:Key="AccentYellowBrush" Color="{StaticResource AccentYellow}"/>
+    
+    <!-- Icon backgrounds for light theme -->
+    <SolidColorBrush x:Key="BgIconBrush" Color="#E8E8E8"/>
+    <SolidColorBrush x:Key="BgAvatarBrush" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="BtnPrimaryBgBrush" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="BtnPrimaryFgBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="BtnSecondaryBorderBrush" Color="#D0D0D0"/>
 
     <!-- EFFECTS -->
     <DropShadowEffect x:Key="GlowWhite" Color="Black" BlurRadius="20" ShadowDepth="0" Opacity="0.15"/>

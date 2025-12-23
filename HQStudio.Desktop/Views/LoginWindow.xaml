@@ -88,7 +88,7 @@
             <Border Grid.Row="1" Background="#E60A0A0A" CornerRadius="0,0,20,20"
                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <Border Width="60" Height="60" CornerRadius="30" Background="#141414" Margin="0,0,0,16">
+                    <Border Width="60" Height="60" CornerRadius="30" Background="{DynamicResource BgIconBrush}" Margin="0,0,0,16">
                         <TextBlock Text="⟳" FontSize="28" Foreground="{DynamicResource TextPrimaryBrush}" 
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>

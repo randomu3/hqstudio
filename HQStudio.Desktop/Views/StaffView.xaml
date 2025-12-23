@@ -29,9 +29,9 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <Border Background="#1E1E1E" CornerRadius="8" Padding="12,8" Margin="0,0,12,0">
+                <Border Background="{DynamicResource BgHoverBrush}" CornerRadius="8" Padding="12,8" Margin="0,0,12,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Всего: " FontSize="13" Foreground="#707070" VerticalAlignment="Center"/>
+                        <TextBlock Text="Всего: " FontSize="13" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding Users.Count}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>

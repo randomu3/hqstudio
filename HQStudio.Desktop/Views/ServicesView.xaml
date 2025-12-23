@@ -30,9 +30,9 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <Border Background="#1E1E1E" CornerRadius="8" Padding="12,8" Margin="0,0,12,0">
+                <Border Background="{DynamicResource BgHoverBrush}" CornerRadius="8" Padding="12,8" Margin="0,0,12,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Всего: " FontSize="13" Foreground="#707070" VerticalAlignment="Center"/>
+                        <TextBlock Text="Всего: " FontSize="13" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding TotalServices}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
@@ -55,7 +55,7 @@
         <Border Grid.Row="2" Background="#80000000" CornerRadius="16" Panel.ZIndex="100"
                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Border Width="60" Height="60" CornerRadius="30" Background="#1A1A1A" Margin="0,0,0,16">
+                <Border Width="60" Height="60" CornerRadius="30" Background="{DynamicResource BgIconBrush}" Margin="0,0,0,16">
                     <TextBlock Text="⏳" FontSize="28" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock.RenderTransform>
                             <RotateTransform x:Name="LoadingRotate" CenterX="14" CenterY="14"/>
@@ -91,8 +91,8 @@
                                 </Grid.ColumnDefinitions>
 
                                 <Border Grid.Column="0" Width="64" Height="64" CornerRadius="14" 
-                                        Background="#1A1A1A" Margin="0,0,20,0">
-                                    <TextBlock Text="{Binding Icon}" FontSize="32" Foreground="#FFFFFF"
+                                        Background="{DynamicResource BgIconBrush}" Margin="0,0,20,0">
+                                    <TextBlock Text="{Binding Icon}" FontSize="32" Foreground="{DynamicResource TextPrimaryBrush}"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
 
@@ -100,7 +100,7 @@
                                     <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" 
                                                Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
                                     <Border Style="{DynamicResource Badge}" HorizontalAlignment="Left" Margin="0,0,0,8">
-                                        <TextBlock Text="{Binding Category}" FontSize="11" Foreground="#909090"/>
+                                        <TextBlock Text="{Binding Category}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
                                     </Border>
                                     <TextBlock Text="{Binding Description}" Style="{DynamicResource TextSmall}"
                                                TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="36"/>
@@ -108,10 +108,10 @@
 
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" MinWidth="120">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <TextBlock Text="от " FontSize="12" Foreground="#606060"/>
+                                        <TextBlock Text="от " FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
                                         <TextBlock Text="{Binding PriceFrom, StringFormat={}{0:N0}}" 
                                                    FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBlock Text=" ₽" FontSize="12" Foreground="#606060" 
+                                        <TextBlock Text=" ₽" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" 
                                                    VerticalAlignment="Bottom" Margin="0,0,0,4"/>
                                     </StackPanel>
                                 </StackPanel>
@@ -125,7 +125,7 @@
         <!-- Empty State -->
         <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
                     Visibility="{Binding Services.Count, Converter={StaticResource CountToVisibility}}">
-            <Border Width="80" Height="80" CornerRadius="40" Background="#141414" Margin="0,0,0,20">
+            <Border Width="80" Height="80" CornerRadius="40" Background="{DynamicResource BgIconBrush}" Margin="0,0,0,20">
                 <TextBlock Text="🔧" FontSize="36" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <TextBlock Text="Услуг пока нет" Style="{DynamicResource TextH3}" HorizontalAlignment="Center"/>
