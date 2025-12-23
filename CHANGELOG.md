@@ -8,71 +8,29 @@
 
 ### 🐛 Исправления
 
-* **desktop:** fixed emoji icons visibility for theme support ([1547eb1](https://github.com/randomu3/hqstudio/commit/1547eb172a402079193697aed6d9939f75779bd8))
-* **desktop:** fixed loader and empty state overlap - show empty state only when not loading ([1f410e7](https://github.com/randomu3/hqstudio/commit/1f410e7fd3c7e84f6bf52aeddcd7ba38fddacbb2))
-* **desktop:** improved theme contrast - replaced hardcoded colors with dynamic resources ([97c453a](https://github.com/randomu3/hqstudio/commit/97c453abab33a00cbb3fe6cd0267ccfa2803c48f))
-* **docker:** improved healthchecks - use /api/health endpoint, add proper depends_on conditions ([78db28b](https://github.com/randomu3/hqstudio/commit/78db28b3e9009cdd254fcf549d0e074e415d7d53))
+* **desktop:** исправлена видимость emoji иконок для поддержки тем ([1547eb1](https://github.com/randomu3/hqstudio/commit/1547eb172a402079193697aed6d9939f75779bd8))
+* **desktop:** исправлено наложение лоадера и пустого состояния ([1f410e7](https://github.com/randomu3/hqstudio/commit/1f410e7fd3c7e84f6bf52aeddcd7ba38fddacbb2))
+* **desktop:** улучшен контраст тем - заменены жёсткие цвета на динамические ресурсы ([97c453a](https://github.com/randomu3/hqstudio/commit/97c453abab33a00cbb3fe6cd0267ccfa2803c48f))
+* **docker:** улучшены healthcheck - используется /api/health endpoint, добавлены depends_on условия ([78db28b](https://github.com/randomu3/hqstudio/commit/78db28b3e9009cdd254fcf549d0e074e415d7d53))
 
-## [1.14.0](https://github.com/randomu3/hqstudio/compare/v1.13.1...v1.14.0) (2025-12-23)
-
-
-### 🚀 Новые возможности
-
-* **desktop:** добавлена валидация ввода для полей цены, телефона и гос. номера ([6fd17d8](https://github.com/randomu3/hqstudio/commit/6fd17d8d565ce790843a2a92bb7dc0a4538c9304))
-
-
-### 🐛 Исправления
-
-* **desktop:** fixed emoji icons visibility for theme support ([1547eb1](https://github.com/randomu3/hqstudio/commit/1547eb172a402079193697aed6d9939f75779bd8))
-* **desktop:** improved theme contrast - replaced hardcoded colors with dynamic resources ([97c453a](https://github.com/randomu3/hqstudio/commit/97c453abab33a00cbb3fe6cd0267ccfa2803c48f))
-* **docker:** improved healthchecks - use /api/health endpoint, add proper depends_on conditions ([78db28b](https://github.com/randomu3/hqstudio/commit/78db28b3e9009cdd254fcf549d0e074e415d7d53))
-
-## [1.14.0](https://github.com/randomu3/hqstudio/compare/v1.13.1...v1.14.0) (2025-12-23)
+## [1.13.1](https://github.com/randomu3/hqstudio/compare/v1.13.0...v1.13.1) (2025-12-23)
 
 
 ### 🚀 Новые возможности
-
-* **desktop:** добавлена валидация ввода для полей цены, телефона и гос. номера ([6fd17d8](https://github.com/randomu3/hqstudio/commit/6fd17d8d565ce790843a2a92bb7dc0a4538c9304))
-
-
-### 🐛 Исправления
-
-* **desktop:** fixed emoji icons visibility for theme support ([1547eb1](https://github.com/randomu3/hqstudio/commit/1547eb172a402079193697aed6d9939f75779bd8))
-* **desktop:** improved theme contrast - replaced hardcoded colors with dynamic resources ([97c453a](https://github.com/randomu3/hqstudio/commit/97c453abab33a00cbb3fe6cd0267ccfa2803c48f))
-
-## [1.14.0](https://github.com/randomu3/hqstudio/compare/v1.13.1...v1.14.0) (2025-12-23)
-
-
-### 🚀 Новые возможности
-
-* **desktop:** добавлена валидация ввода для полей цены, телефона и гос. номера ([6fd17d8](https://github.com/randomu3/hqstudio/commit/6fd17d8d565ce790843a2a92bb7dc0a4538c9304))
-
-
-### 🐛 Исправления
-
-* **desktop:** fixed emoji icons visibility for theme support ([1547eb1](https://github.com/randomu3/hqstudio/commit/1547eb172a402079193697aed6d9939f75779bd8))
-
-## [1.14.0](https://github.com/randomu3/hqstudio/compare/v1.13.1...v1.14.0) (2025-12-23)
-
-
-### 🚀 Новые возможности
-
-* **desktop:** добавлена валидация ввода для полей цены, телефона и гос. номера ([6fd17d8](https://github.com/randomu3/hqstudio/commit/6fd17d8d565ce790843a2a92bb7dc0a4538c9304))
-
 ## [1.13.1](https://github.com/randomu3/hqstudio/compare/v1.13.0...v1.13.1) (2025-12-23)
 
 
 ### 🐛 Исправления
 
-* **desktop:** route service edit through ViewModel API instead of local DataService ([e6087de](https://github.com/randomu3/hqstudio/commit/e6087de441d548afd94dd8555fc20626c041cb44))
+* **desktop:** исправлена маршрутизация редактирования услуг через ViewModel API вместо локального DataService ([e6087de](https://github.com/randomu3/hqstudio/commit/e6087de441d548afd94dd8555fc20626c041cb44))
 
 ## [1.13.0](https://github.com/randomu3/hqstudio/compare/v1.12.0...v1.13.0) (2025-12-23)
 
 
 ### 🚀 Новые возможности
 
-* **desktop:** add icon picker with smart recommendations for services ([66d04f1](https://github.com/randomu3/hqstudio/commit/66d04f1868fe2c1a49649e16d471d22ff6c25ffe))
-* **desktop:** add pagination, counters, Excel export and API sync ([b8e4f43](https://github.com/randomu3/hqstudio/commit/b8e4f43cdea99ba3fe4443cfdc5b6e153ec41e12))
+* **desktop:** добавлен выбор иконок с умными рекомендациями для услуг ([66d04f1](https://github.com/randomu3/hqstudio/commit/66d04f1868fe2c1a49649e16d471d22ff6c25ffe))
+* **desktop:** добавлена пагинация, счётчики, экспорт в Excel и синхронизация с API ([b8e4f43](https://github.com/randomu3/hqstudio/commit/b8e4f43cdea99ba3fe4443cfdc5b6e153ec41e12))
 
 ## [1.12.0](https://github.com/randomu3/hqstudio/compare/v1.11.0...v1.12.0) (2025-12-23)
 
