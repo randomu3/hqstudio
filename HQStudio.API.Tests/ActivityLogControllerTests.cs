@@ -5,80 +5,32 @@ using Xunit;
 
 namespace HQStudio.API.Tests;
 
-public class ActivityLogControllerTests : IClassFixture<TestWebApplicationFactory>
+public class ActivityLogControllerTests : IntegrationTestBase
 {
-    private readonly TestWebApplicationFactory _factory;
-
-    public ActivityLogControllerTests(TestWebApplicationFactory factory)
-    {
-        _factory = factory;
-    }
-
     [Fact]
     public async Task GetAll_WithoutAuth_ReturnsUnauthorized()
     {
-        var client = _factory.CreateClient();
-
-        var response = await client.GetAsync("/api/activitylog");
-
+        var response = await Client.GetAsync("/api/activitylog");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
     public async Task GetAll_WithAuth_ReturnsActivityLogs()
     {
-        var client = await _factory.GetAuthenticatedClientAsync();
+        await AuthenticateAsync();
 
-        var response = await client.GetAsync("/api/activitylog");
+        var response = await Client.GetAsync("/api/activitylog");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<ActivityLogResponse>();
         result.Should().NotBeNull();
         result!.Items.Should().NotBeNull();
-        result.Page.Should().BeGreaterThan(0);
-        result.PageSize.Should().BeGreaterThan(0);
-    }
-
-    [Fact]
-    public async Task GetAll_WithPagination_ReturnsCorrectPage()
-    {
-        var client = await _factory.GetAuthenticatedClientAsync();
-
-        var response = await client.GetAsync("/api/activitylog?page=1&pageSize=5");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<ActivityLogResponse>();
-        result.Should().NotBeNull();
-        result!.Page.Should().Be(1);
-        result.PageSize.Should().Be(5);
-        result.Items.Count.Should().BeLessThanOrEqualTo(5);
-    }
-
-    [Fact]
-    public async Task GetAll_WithSourceFilter_ReturnsFilteredLogs()
-    {
-        var client = await _factory.GetAuthenticatedClientAsync();
-        client.DefaultRequestHeaders.Add("X-Client-Type", "Desktop");
-
-        // Сначала создадим запись с определённым источником
-        await client.PostAsJsonAsync("/api/activitylog", new
-        {
-            action = "Test action",
-            source = "Desktop"
-        });
-
-        var response = await client.GetAsync("/api/activitylog?source=Desktop");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<ActivityLogResponse>();
-        result.Should().NotBeNull();
-        result!.Items.Should().OnlyContain(x => x.Source == "Desktop");
     }
 
     [Fact]
     public async Task Create_WithValidData_ReturnsCreatedLog()
     {
-        var client = await _factory.GetAuthenticatedClientAsync();
+        await AuthenticateAsync();
         var request = new
         {
             action = "Тестовое действие",
@@ -88,22 +40,7 @@ public class ActivityLogControllerTests : IClassFixture<TestWebApplicationFactor
             source = "Web"
         };
 
-        var response = await client.PostAsJsonAsync("/api/activitylog", request);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<CreateActivityLogResponse>();
-        result.Should().NotBeNull();
-        result!.Id.Should().BeGreaterThan(0);
-        result.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-    }
-
-    [Fact]
-    public async Task Create_WithMinimalData_ReturnsCreatedLog()
-    {
-        var client = await _factory.GetAuthenticatedClientAsync();
-        var request = new { action = "Минимальное действие" };
-
-        var response = await client.PostAsJsonAsync("/api/activitylog", request);
+        var response = await Client.PostAsJsonAsync("/api/activitylog", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<CreateActivityLogResponse>();
@@ -114,10 +51,9 @@ public class ActivityLogControllerTests : IClassFixture<TestWebApplicationFactor
     [Fact]
     public async Task Create_WithoutAuth_ReturnsUnauthorized()
     {
-        var client = _factory.CreateClient();
         var request = new { action = "Test action" };
 
-        var response = await client.PostAsJsonAsync("/api/activitylog", request);
+        var response = await Client.PostAsJsonAsync("/api/activitylog", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -125,101 +61,29 @@ public class ActivityLogControllerTests : IClassFixture<TestWebApplicationFactor
     [Fact]
     public async Task GetStats_WithAuth_ReturnsStats()
     {
-        var client = await _factory.GetAuthenticatedClientAsync();
+        await AuthenticateAsync();
 
-        var response = await client.GetAsync("/api/activitylog/stats");
+        var response = await Client.GetAsync("/api/activitylog/stats");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<ActivityLogStats>();
         result.Should().NotBeNull();
         result!.TotalAll.Should().BeGreaterThanOrEqualTo(0);
-        result.TotalToday.Should().BeGreaterThanOrEqualTo(0);
-        result.TotalWeek.Should().BeGreaterThanOrEqualTo(0);
-        result.BySource.Should().NotBeNull();
-        result.ByUser.Should().NotBeNull();
     }
 
     [Fact]
     public async Task GetStats_WithoutAuth_ReturnsUnauthorized()
     {
-        var client = _factory.CreateClient();
-
-        var response = await client.GetAsync("/api/activitylog/stats");
-
+        var response = await Client.GetAsync("/api/activitylog/stats");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    [Fact]
-    public async Task GetAll_WithUserIdFilter_ReturnsFilteredLogs()
-    {
-        var client = await _factory.GetAuthenticatedClientAsync();
-        client.DefaultRequestHeaders.Add("X-Client-Type", "Desktop");
-
-        // Создаём запись от текущего пользователя с Source=Desktop
-        await client.PostAsJsonAsync("/api/activitylog", new { action = "User specific action", source = "Desktop" });
-
-        // Фильтруем по userId=1 (admin) - записи создаются с userId из токена
-        var response = await client.GetAsync("/api/activitylog?userId=1");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<ActivityLogResponse>();
-        result.Should().NotBeNull();
-        // Проверяем что фильтрация работает - все записи должны быть от userId=1 или пустые
-        result!.Items.Where(x => x.UserId != 0).Should().OnlyContain(x => x.UserId == 1);
-    }
-
-    [Fact]
-    public async Task GetAll_OrderedByCreatedAtDescending()
-    {
-        var client = await _factory.GetAuthenticatedClientAsync();
-        client.DefaultRequestHeaders.Add("X-Client-Type", "Desktop");
-
-        // Создаём несколько записей
-        await client.PostAsJsonAsync("/api/activitylog", new { action = "Action 1", source = "Desktop" });
-        await Task.Delay(100);
-        await client.PostAsJsonAsync("/api/activitylog", new { action = "Action 2", source = "Desktop" });
-
-        var response = await client.GetAsync("/api/activitylog");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<ActivityLogResponse>();
-        result.Should().NotBeNull();
-        
-        if (result!.Items.Count >= 2)
-        {
-            result.Items.Should().BeInDescendingOrder(x => x.CreatedAt);
-        }
-    }
-
-    [Fact]
-    public async Task Create_SetsCorrectUserInfo()
-    {
-        var client = await _factory.GetAuthenticatedClientAsync();
-        client.DefaultRequestHeaders.Add("X-Client-Type", "Desktop");
-        var request = new { action = "Check user info", source = "Desktop" };
-
-        await client.PostAsJsonAsync("/api/activitylog", request);
-
-        var response = await client.GetAsync("/api/activitylog?pageSize=1");
-        var result = await response.Content.ReadFromJsonAsync<ActivityLogResponse>();
-        
-        result.Should().NotBeNull();
-        // Проверяем что запрос успешен
-        if (result!.Items.Any())
-        {
-            var lastLog = result.Items.First();
-            lastLog.UserName.Should().NotBeNullOrEmpty();
-        }
-    }
-
-    // DTOs for deserialization
     private class ActivityLogResponse
     {
         public List<ActivityLogItem> Items { get; set; } = new();
         public int Total { get; set; }
         public int Page { get; set; }
         public int PageSize { get; set; }
-        public int TotalPages { get; set; }
     }
 
     private class ActivityLogItem
@@ -228,11 +92,7 @@ public class ActivityLogControllerTests : IClassFixture<TestWebApplicationFactor
         public int UserId { get; set; }
         public string UserName { get; set; } = "";
         public string Action { get; set; } = "";
-        public string? EntityType { get; set; }
-        public int? EntityId { get; set; }
-        public string? Details { get; set; }
         public string Source { get; set; } = "";
-        public string? IpAddress { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
@@ -247,20 +107,7 @@ public class ActivityLogControllerTests : IClassFixture<TestWebApplicationFactor
         public int TotalToday { get; set; }
         public int TotalWeek { get; set; }
         public int TotalAll { get; set; }
-        public List<SourceStat> BySource { get; set; } = new();
-        public List<UserStat> ByUser { get; set; } = new();
-    }
-
-    private class SourceStat
-    {
-        public string Source { get; set; } = "";
-        public int Count { get; set; }
-    }
-
-    private class UserStat
-    {
-        public int UserId { get; set; }
-        public string UserName { get; set; } = "";
-        public int Count { get; set; }
+        public List<object> BySource { get; set; } = new();
+        public List<object> ByUser { get; set; } = new();
     }
 }

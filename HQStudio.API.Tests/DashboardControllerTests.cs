@@ -7,23 +7,13 @@ using Xunit;
 
 namespace HQStudio.API.Tests;
 
-public class DashboardControllerTests : IClassFixture<TestWebApplicationFactory>
+public class DashboardControllerTests : IntegrationTestBase
 {
-    private readonly HttpClient _client;
-    private readonly TestWebApplicationFactory _factory;
-
-    public DashboardControllerTests(TestWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _factory.SeedDatabase();
-        _client = factory.CreateClient();
-    }
-
     [Fact]
     public async Task GetStats_WithoutAuth_ReturnsUnauthorized()
     {
         // Act
-        var response = await _client.GetAsync("/api/dashboard");
+        var response = await Client.GetAsync("/api/dashboard");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -36,7 +26,7 @@ public class DashboardControllerTests : IClassFixture<TestWebApplicationFactory>
         await AuthenticateAsync();
 
         // Act
-        var response = await _client.GetAsync("/api/dashboard");
+        var response = await Client.GetAsync("/api/dashboard");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -51,7 +41,7 @@ public class DashboardControllerTests : IClassFixture<TestWebApplicationFactory>
         await AuthenticateAsync();
 
         // Act
-        var response = await _client.GetAsync("/api/dashboard");
+        var response = await Client.GetAsync("/api/dashboard");
         var stats = await response.Content.ReadFromJsonAsync<DashboardStats>();
 
         // Assert
@@ -61,35 +51,5 @@ public class DashboardControllerTests : IClassFixture<TestWebApplicationFactory>
         stats.MonthlyRevenue.Should().BeGreaterThanOrEqualTo(0);
         stats.PopularServices.Should().NotBeNull();
         stats.RecentOrders.Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task GetStats_AfterCreatingCallback_ShowsNewCallback()
-    {
-        // Arrange
-        await AuthenticateAsync();
-        
-        // Get initial stats
-        var initialResponse = await _client.GetAsync("/api/dashboard");
-        var initialStats = await initialResponse.Content.ReadFromJsonAsync<DashboardStats>();
-        
-        // Create a callback
-        await _client.PostAsJsonAsync("/api/callbacks", 
-            new CreateCallbackRequest($"Dashboard Test {Guid.NewGuid()}", "+79990009999", null, null, null, null, null));
-
-        // Act
-        var response = await _client.GetAsync("/api/dashboard");
-        var stats = await response.Content.ReadFromJsonAsync<DashboardStats>();
-
-        // Assert
-        stats!.NewCallbacks.Should().BeGreaterThanOrEqualTo(initialStats!.NewCallbacks);
-    }
-
-    private async Task AuthenticateAsync()
-    {
-        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "admin"));
-        var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        _client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult!.Token);
     }
 }

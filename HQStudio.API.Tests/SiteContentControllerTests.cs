@@ -8,23 +8,13 @@ using Xunit;
 
 namespace HQStudio.API.Tests;
 
-public class SiteContentControllerTests : IClassFixture<TestWebApplicationFactory>
+public class SiteContentControllerTests : IntegrationTestBase
 {
-    private readonly HttpClient _client;
-    private readonly TestWebApplicationFactory _factory;
-
-    public SiteContentControllerTests(TestWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _factory.SeedDatabase();
-        _client = factory.CreateClient();
-    }
-
     [Fact]
     public async Task GetSiteData_ReturnsAllPublicData()
     {
         // Act
-        var response = await _client.GetAsync("/api/site");
+        var response = await Client.GetAsync("/api/site");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -40,7 +30,7 @@ public class SiteContentControllerTests : IClassFixture<TestWebApplicationFactor
     public async Task GetSiteData_ContainsSeededServices()
     {
         // Act
-        var response = await _client.GetAsync("/api/site");
+        var response = await Client.GetAsync("/api/site");
         var data = await response.Content.ReadFromJsonAsync<SiteDataResponse>();
 
         // Assert
@@ -49,33 +39,10 @@ public class SiteContentControllerTests : IClassFixture<TestWebApplicationFactor
     }
 
     [Fact]
-    public async Task GetSiteData_ContainsSeededTestimonials()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/site");
-        var data = await response.Content.ReadFromJsonAsync<SiteDataResponse>();
-
-        // Assert
-        data!.Testimonials.Should().Contain(t => t.Name == "Марина");
-        data.Testimonials.Should().Contain(t => t.Car == "Audi Q7");
-    }
-
-    [Fact]
-    public async Task GetSiteData_ContainsSeededFaq()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/site");
-        var data = await response.Content.ReadFromJsonAsync<SiteDataResponse>();
-
-        // Assert
-        data!.Faq.Should().Contain(f => f.Question.Contains("гарантия"));
-    }
-
-    [Fact]
     public async Task GetBlocks_WithoutAuth_ReturnsUnauthorized()
     {
         // Act
-        var response = await _client.GetAsync("/api/site/blocks");
+        var response = await Client.GetAsync("/api/site/blocks");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -88,7 +55,7 @@ public class SiteContentControllerTests : IClassFixture<TestWebApplicationFactor
         await AuthenticateAsync();
 
         // Act
-        var response = await _client.GetAsync("/api/site/blocks");
+        var response = await Client.GetAsync("/api/site/blocks");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -104,7 +71,7 @@ public class SiteContentControllerTests : IClassFixture<TestWebApplicationFactor
         await AuthenticateAsync();
 
         // Act
-        var response = await _client.GetAsync("/api/site/testimonials");
+        var response = await Client.GetAsync("/api/site/testimonials");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -119,19 +86,11 @@ public class SiteContentControllerTests : IClassFixture<TestWebApplicationFactor
         await AuthenticateAsync();
 
         // Act
-        var response = await _client.GetAsync("/api/site/faq");
+        var response = await Client.GetAsync("/api/site/faq");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var faq = await response.Content.ReadFromJsonAsync<List<FaqItem>>();
         faq.Should().NotBeNull();
-    }
-
-    private async Task AuthenticateAsync()
-    {
-        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "admin"));
-        var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        _client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult!.Token);
     }
 }

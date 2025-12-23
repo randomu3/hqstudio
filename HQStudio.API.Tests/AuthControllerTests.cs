@@ -6,18 +6,8 @@ using Xunit;
 
 namespace HQStudio.API.Tests;
 
-public class AuthControllerTests : IClassFixture<TestWebApplicationFactory>
+public class AuthControllerTests : IntegrationTestBase
 {
-    private readonly HttpClient _client;
-    private readonly TestWebApplicationFactory _factory;
-
-    public AuthControllerTests(TestWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _factory.SeedDatabase();
-        _client = factory.CreateClient();
-    }
-
     [Fact]
     public async Task Login_WithValidCredentials_ReturnsToken()
     {
@@ -25,7 +15,7 @@ public class AuthControllerTests : IClassFixture<TestWebApplicationFactory>
         var request = new LoginRequest("admin", "admin");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", request);
+        var response = await Client.PostAsJsonAsync("/api/auth/login", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -43,7 +33,7 @@ public class AuthControllerTests : IClassFixture<TestWebApplicationFactory>
         var request = new LoginRequest("admin", "wrongpassword");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", request);
+        var response = await Client.PostAsJsonAsync("/api/auth/login", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -56,7 +46,7 @@ public class AuthControllerTests : IClassFixture<TestWebApplicationFactory>
         var request = new LoginRequest("nonexistent", "password");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", request);
+        var response = await Client.PostAsJsonAsync("/api/auth/login", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -66,7 +56,7 @@ public class AuthControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetMe_WithoutToken_ReturnsUnauthorized()
     {
         // Act
-        var response = await _client.GetAsync("/api/auth/me");
+        var response = await Client.GetAsync("/api/auth/me");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -76,13 +66,10 @@ public class AuthControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetMe_WithValidToken_ReturnsCurrentUser()
     {
         // Arrange
-        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "admin"));
-        var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        _client.DefaultRequestHeaders.Authorization = 
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", loginResult!.Token);
+        await AuthenticateAsync();
 
         // Act
-        var response = await _client.GetAsync("/api/auth/me");
+        var response = await Client.GetAsync("/api/auth/me");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);

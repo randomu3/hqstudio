@@ -2,39 +2,20 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using HQStudio.API.DTOs;
-using HQStudio.API.Models;
 using Xunit;
 
 namespace HQStudio.API.Tests;
 
-public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
+public class ClientsControllerTests : IntegrationTestBase
 {
-    private readonly HttpClient _client;
-    private readonly TestWebApplicationFactory _factory;
-
-    public ClientsControllerTests(TestWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _factory.SeedDatabase();
-        _client = factory.CreateClient();
-    }
-
-    private async Task<string> GetAuthToken()
-    {
-        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "admin"));
-        var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        return loginResult!.Token;
-    }
-
     [Fact]
     public async Task GetAll_WithAuth_ReturnsClients()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await AuthenticateAsync();
 
         // Act
-        var response = await _client.GetAsync("/api/clients");
+        var response = await Client.GetAsync("/api/clients");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -44,7 +25,7 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetAll_WithoutAuth_ReturnsUnauthorized()
     {
         // Act
-        var response = await _client.GetAsync("/api/clients");
+        var response = await Client.GetAsync("/api/clients");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -54,8 +35,7 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task Create_WithAuth_CreatesClient()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await AuthenticateAsync();
         var newClient = new
         {
             name = "Тестовый Клиент",
@@ -66,7 +46,7 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/clients", newClient);
+        var response = await Client.PostAsJsonAsync("/api/clients", newClient);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -79,11 +59,9 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task Get_WithValidId_ReturnsClient()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await AuthenticateAsync();
         
-        // Create client first
-        var createResponse = await _client.PostAsJsonAsync("/api/clients", new
+        var createResponse = await Client.PostAsJsonAsync("/api/clients", new
         {
             name = "Get Test Client",
             phone = "+7-999-222-33-44"
@@ -91,7 +69,7 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
         var created = await createResponse.Content.ReadFromJsonAsync<ClientDto>();
 
         // Act
-        var response = await _client.GetAsync($"/api/clients/{created!.Id}");
+        var response = await Client.GetAsync($"/api/clients/{created!.Id}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -103,11 +81,10 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task Get_WithInvalidId_ReturnsNotFound()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await AuthenticateAsync();
 
         // Act
-        var response = await _client.GetAsync("/api/clients/99999");
+        var response = await Client.GetAsync("/api/clients/99999");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -117,10 +94,9 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task Update_WithAuth_UpdatesClient()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await AuthenticateAsync();
         
-        var createResponse = await _client.PostAsJsonAsync("/api/clients", new
+        var createResponse = await Client.PostAsJsonAsync("/api/clients", new
         {
             name = "Update Test",
             phone = "+7-999-333-44-55"
@@ -135,7 +111,7 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/clients/{created.Id}", updated);
+        var response = await Client.PutAsJsonAsync($"/api/clients/{created.Id}", updated);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -145,10 +121,9 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task Delete_WithAdminRole_DeletesClient()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await AuthenticateAsync();
         
-        var createResponse = await _client.PostAsJsonAsync("/api/clients", new
+        var createResponse = await Client.PostAsJsonAsync("/api/clients", new
         {
             name = "Delete Test",
             phone = "+7-999-444-55-66"
@@ -156,7 +131,7 @@ public class ClientsControllerTests : IClassFixture<TestWebApplicationFactory>
         var created = await createResponse.Content.ReadFromJsonAsync<ClientDto>();
 
         // Act
-        var response = await _client.DeleteAsync($"/api/clients/{created!.Id}");
+        var response = await Client.DeleteAsync($"/api/clients/{created!.Id}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);

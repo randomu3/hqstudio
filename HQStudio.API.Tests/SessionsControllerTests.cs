@@ -7,35 +7,17 @@ using Xunit;
 
 namespace HQStudio.API.Tests;
 
-public class SessionsControllerTests : IClassFixture<TestWebApplicationFactory>
+public class SessionsControllerTests : IntegrationTestBase
 {
-    private readonly HttpClient _client;
-    private readonly TestWebApplicationFactory _factory;
-
-    public SessionsControllerTests(TestWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _factory.SeedDatabase();
-        _client = factory.CreateClient();
-    }
-
-    private async Task<string> GetAuthToken()
-    {
-        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest("admin", "admin"));
-        var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        return loginResult!.Token;
-    }
-
     [Fact]
     public async Task StartSession_WithAuth_CreatesSession()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await AuthenticateAsync();
         var request = new StartSessionRequest("device-123", "Test PC");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/sessions/start", request);
+        var response = await Client.PostAsJsonAsync("/api/sessions/start", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -52,7 +34,7 @@ public class SessionsControllerTests : IClassFixture<TestWebApplicationFactory>
         var request = new StartSessionRequest("device-123", "Test PC");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/sessions/start", request);
+        var response = await Client.PostAsJsonAsync("/api/sessions/start", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -62,15 +44,12 @@ public class SessionsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task Heartbeat_WithValidSession_ReturnsSuccess()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        
-        // Start session first
-        var startResponse = await _client.PostAsJsonAsync("/api/sessions/start", new StartSessionRequest("device-hb", "Heartbeat Test"));
+        await AuthenticateAsync();
+        var startResponse = await Client.PostAsJsonAsync("/api/sessions/start", new StartSessionRequest("device-hb", "Heartbeat Test"));
         var session = await startResponse.Content.ReadFromJsonAsync<SessionResult>();
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/sessions/heartbeat", new HeartbeatRequest(session!.Id));
+        var response = await Client.PostAsJsonAsync("/api/sessions/heartbeat", new HeartbeatRequest(session!.Id));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -83,11 +62,10 @@ public class SessionsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task Heartbeat_WithInvalidSession_ReturnsNotFound()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await AuthenticateAsync();
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/sessions/heartbeat", new HeartbeatRequest(99999));
+        var response = await Client.PostAsJsonAsync("/api/sessions/heartbeat", new HeartbeatRequest(99999));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -97,14 +75,12 @@ public class SessionsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task EndSession_WithValidSession_EndsSession()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        
-        var startResponse = await _client.PostAsJsonAsync("/api/sessions/start", new StartSessionRequest("device-end", "End Test"));
+        await AuthenticateAsync();
+        var startResponse = await Client.PostAsJsonAsync("/api/sessions/start", new StartSessionRequest("device-end", "End Test"));
         var session = await startResponse.Content.ReadFromJsonAsync<SessionResult>();
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/sessions/end", new EndSessionRequest(session!.Id));
+        var response = await Client.PostAsJsonAsync("/api/sessions/end", new EndSessionRequest(session!.Id));
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -114,14 +90,11 @@ public class SessionsControllerTests : IClassFixture<TestWebApplicationFactory>
     public async Task GetActiveSessions_WithAuth_ReturnsList()
     {
         // Arrange
-        var token = await GetAuthToken();
-        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        
-        // Start a session
-        await _client.PostAsJsonAsync("/api/sessions/start", new StartSessionRequest("device-active", "Active Test"));
+        await AuthenticateAsync();
+        await Client.PostAsJsonAsync("/api/sessions/start", new StartSessionRequest("device-active", "Active Test"));
 
         // Act
-        var response = await _client.GetAsync("/api/sessions/active");
+        var response = await Client.GetAsync("/api/sessions/active");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -130,7 +103,6 @@ public class SessionsControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 }
 
-// DTOs for tests
 public class SessionResult
 {
     public int Id { get; set; }

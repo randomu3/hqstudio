@@ -6,12 +6,30 @@ using HQStudio.API.Data;
 using HQStudio.API.Models;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
+using Testcontainers.PostgreSql;
+using Xunit;
 
 namespace HQStudio.API.Tests;
 
-public class TestWebApplicationFactory : WebApplicationFactory<Program>
+public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly string _dbName = $"TestDb_{Guid.NewGuid()}";
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
+        .WithImage("postgres:16-alpine")
+        .WithDatabase("hqstudio_test")
+        .WithUsername("test")
+        .WithPassword("test")
+        .Build();
+
+    public async Task InitializeAsync()
+    {
+        await _postgres.StartAsync();
+    }
+
+    public new async Task DisposeAsync()
+    {
+        await _postgres.DisposeAsync();
+        await base.DisposeAsync();
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -23,10 +41,10 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             if (descriptor != null)
                 services.Remove(descriptor);
 
-            // Add in-memory database for testing (unique per factory instance)
+            // Add PostgreSQL from Testcontainers
             services.AddDbContext<AppDbContext>(options =>
             {
-                options.UseInMemoryDatabase(_dbName);
+                options.UseNpgsql(_postgres.GetConnectionString());
             });
         });
 
@@ -38,7 +56,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-        // Очищаем базу перед сидингом
+        // Создаём таблицы
         db.Database.EnsureDeleted();
         db.Database.EnsureCreated();
 
@@ -53,8 +71,8 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
 
         // Add test services
         db.Services.AddRange(
-            new Service { Title = "Доводчики дверей", Category = "Комфорт", Description = "Test", Price = "от 15 000 ₽", IsActive = true, SortOrder = 1 },
-            new Service { Title = "Шумоизоляция", Category = "Тишина", Description = "Test", Price = "от 15 000 ₽", IsActive = true, SortOrder = 2 }
+            new Service { Title = "Доводчики дверей", Category = "Комфорт", Description = "Test", Price = "от 15 000 ₽", Icon = "🚪", IsActive = true, SortOrder = 1 },
+            new Service { Title = "Шумоизоляция", Category = "Тишина", Description = "Test", Price = "от 15 000 ₽", Icon = "🔇", IsActive = true, SortOrder = 2 }
         );
 
         // Add test blocks
