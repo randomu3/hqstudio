@@ -1,3 +1,11 @@
+## [1.13.0](https://github.com/randomu3/hqstudio/compare/v1.12.0...v1.13.0) (2025-12-23)
+
+
+### 🚀 Новые возможности
+
+* **desktop:** add icon picker with smart recommendations for services ([66d04f1](https://github.com/randomu3/hqstudio/commit/66d04f1868fe2c1a49649e16d471d22ff6c25ffe))
+* **desktop:** add pagination, counters, Excel export and API sync ([b8e4f43](https://github.com/randomu3/hqstudio/commit/b8e4f43cdea99ba3fe4443cfdc5b6e153ec41e12))
+
 ## [1.12.0](https://github.com/randomu3/hqstudio/compare/v1.11.0...v1.12.0) (2025-12-23)
 
 
