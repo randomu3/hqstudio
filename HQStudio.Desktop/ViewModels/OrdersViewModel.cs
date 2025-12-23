@@ -358,7 +358,7 @@ namespace HQStudio.ViewModels
             
             if (!hasClients)
             {
-                MessageBox.Show("Сначала добавьте клиента", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ConfirmDialog.ShowInfo("Нет клиентов", "Сначала добавьте клиента в разделе \"Клиенты\".", ConfirmDialog.DialogType.Warning);
                 return;
             }
 
@@ -383,7 +383,7 @@ namespace HQStudio.ViewModels
                     var created = await _apiService.CreateOrderAsync(request);
                     if (created == null)
                     {
-                        MessageBox.Show("Не удалось создать заказ", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ConfirmDialog.ShowInfo("Ошибка", "Не удалось создать заказ. Попробуйте позже.", ConfirmDialog.DialogType.Error);
                         return;
                     }
                     createdOrderId = created.Id;
@@ -438,23 +438,25 @@ namespace HQStudio.ViewModels
         {
             if (SelectedOrder == null)
             {
-                MessageBox.Show("Выберите заказ для завершения", "Завершение заказа", MessageBoxButton.OK, MessageBoxImage.Information);
+                ConfirmDialog.ShowInfo("Завершение заказа", "Выберите заказ для завершения.\n\nКликните на заказ в списке, чтобы выбрать его.", ConfirmDialog.DialogType.Warning);
                 return;
             }
             
             if (SelectedOrder.Status == "Завершен")
             {
-                MessageBox.Show("Заказ уже завершён", "Завершение заказа", MessageBoxButton.OK, MessageBoxImage.Information);
+                ConfirmDialog.ShowInfo("Завершение заказа", "Этот заказ уже завершён.", ConfirmDialog.DialogType.Warning);
                 return;
             }
             
-            var result = MessageBox.Show(
-                $"Завершить заказ #{SelectedOrder.Id}?\n\nСтатус будет изменён на \"Завершен\".",
-                "Подтверждение",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            var confirmed = ConfirmDialog.Show(
+                "Завершить заказ?",
+                $"Заказ #{SelectedOrder.Id} будет отмечен как завершённый.\n\nПродолжить?",
+                ConfirmDialog.DialogType.Question,
+                "Завершить", "Отмена");
             
-            if (result != MessageBoxResult.Yes) return;
+            if (!confirmed) return;
+            
+            var orderId = SelectedOrder.Id;
             
             if (_settings.UseApi && _apiService.IsConnected)
             {
@@ -468,31 +470,38 @@ namespace HQStudio.ViewModels
             }
             
             await LoadOrdersAsync();
-            MessageBox.Show($"Заказ #{SelectedOrder?.Id ?? 0} успешно завершён!", "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
+            ConfirmDialog.ShowInfo("Готово", $"Заказ #{orderId} успешно завершён!", ConfirmDialog.DialogType.Success);
         }
 
         private async void DeleteOrderAsync()
         {
-            if (SelectedOrder == null) return;
-            
-            var result = MessageBox.Show(
-                $"Удалить заказ #{SelectedOrder.Id}?\n\nЗаказ будет помечен как удалённый, но сохранится в базе данных.",
-                "Подтверждение удаления",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-            
-            if (result == MessageBoxResult.Yes)
+            if (SelectedOrder == null)
             {
+                ConfirmDialog.ShowInfo("Удаление заказа", "Выберите заказ для удаления.\n\nКликните на заказ в списке, чтобы выбрать его.", ConfirmDialog.DialogType.Warning);
+                return;
+            }
+            
+            var confirmed = ConfirmDialog.Show(
+                "Удалить заказ?",
+                $"Заказ #{SelectedOrder.Id} будет удалён.\n\nЭто действие нельзя отменить.",
+                ConfirmDialog.DialogType.Warning,
+                "Удалить", "Отмена");
+            
+            if (confirmed)
+            {
+                var orderId = SelectedOrder.Id;
+                
                 if (_settings.UseApi && _apiService.IsConnected)
                 {
                     var success = await _apiService.DeleteOrderAsync(SelectedOrder.Id);
                     if (success)
                     {
                         await LoadOrdersAsync();
+                        ConfirmDialog.ShowInfo("Готово", $"Заказ #{orderId} удалён.", ConfirmDialog.DialogType.Success);
                     }
                     else
                     {
-                        MessageBox.Show("Не удалось удалить заказ", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ConfirmDialog.ShowInfo("Ошибка", "Не удалось удалить заказ. Попробуйте позже.", ConfirmDialog.DialogType.Error);
                     }
                 }
                 else
@@ -500,6 +509,7 @@ namespace HQStudio.ViewModels
                     _dataService.Orders.Remove(SelectedOrder);
                     _dataService.SaveData();
                     LoadOrders();
+                    ConfirmDialog.ShowInfo("Готово", $"Заказ #{orderId} удалён.", ConfirmDialog.DialogType.Success);
                 }
             }
         }
@@ -643,7 +653,7 @@ namespace HQStudio.ViewModels
         {
             if (SelectedOrder == null)
             {
-                MessageBox.Show("Выберите заказ для печати", "Печать", MessageBoxButton.OK, MessageBoxImage.Information);
+                ConfirmDialog.ShowInfo("Печать", "Выберите заказ для печати.\n\nКликните на заказ в списке, чтобы выбрать его.", ConfirmDialog.DialogType.Warning);
                 return;
             }
             
@@ -654,7 +664,7 @@ namespace HQStudio.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при печати: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                ConfirmDialog.ShowInfo("Ошибка печати", $"Не удалось напечатать заказ:\n{ex.Message}", ConfirmDialog.DialogType.Error);
             }
         }
         
@@ -662,7 +672,7 @@ namespace HQStudio.ViewModels
         {
             if (!Orders.Any())
             {
-                MessageBox.Show("Нет заказов для экспорта", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                ConfirmDialog.ShowInfo("Экспорт", "Нет заказов для экспорта.", ConfirmDialog.DialogType.Warning);
                 return;
             }
             
@@ -718,7 +728,7 @@ namespace HQStudio.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при экспорте: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                ConfirmDialog.ShowInfo("Ошибка экспорта", $"Не удалось экспортировать заказы:\n{ex.Message}", ConfirmDialog.DialogType.Error);
             }
             finally
             {

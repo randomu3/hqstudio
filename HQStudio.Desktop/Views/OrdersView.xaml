@@ -133,8 +133,12 @@
             <ItemsControl ItemsSource="{Binding Orders}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{DynamicResource CardHoverable}" Margin="0,0,0,12"
-                                MouseLeftButtonDown="Order_MouseLeftButtonDown">
+                        <Border x:Name="OrderCard" Margin="0,0,0,12"
+                                MouseLeftButtonDown="Order_MouseLeftButtonDown"
+                                Cursor="Hand"
+                                Style="{DynamicResource CardHoverable}"
+                                BorderThickness="2"
+                                BorderBrush="Transparent">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
