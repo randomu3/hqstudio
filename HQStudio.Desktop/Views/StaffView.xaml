@@ -50,10 +50,24 @@
             </StackPanel>
         </Grid>
 
-        <!-- Loading -->
+        <!-- Loading (только когда есть подключение) -->
         <TextBlock Grid.Row="2" Text="Загрузка..." FontSize="16" Foreground="#707070"
-                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                   Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"/>
+                   HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsLoading}" Value="True"/>
+                                <Condition Binding="{Binding IsApiConnected}" Value="True"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
 
         <!-- No API Connection -->
         <controls:NoApiConnectionView Grid.Row="2" SectionName="Сотрудники"
