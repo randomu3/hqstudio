@@ -87,7 +87,10 @@ namespace HQStudio.Services
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[ApiService] LoginAsync: login={login}, url={_baseUrl}/api/auth/login");
                 var response = await _http.PostAsJsonAsync("/api/auth/login", new { login, password });
+                System.Diagnostics.Debug.WriteLine($"[ApiService] LoginAsync: StatusCode={response.StatusCode}");
+                
                 if (response.IsSuccessStatusCode)
                 {
                     var result = await response.Content.ReadFromJsonAsync<LoginResult>();
@@ -96,12 +99,52 @@ namespace HQStudio.Services
                         SetToken(result.Token);
                         CurrentUser = result.User;
                         IsConnected = true;
+                        System.Diagnostics.Debug.WriteLine($"[ApiService] LoginAsync: Success, user={result.User.Name}, mustChangePassword={result.MustChangePassword}");
                     }
                     return result;
                 }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[ApiService] LoginAsync: Failed, error={errorContent}");
+                }
             }
-            catch { IsConnected = false; }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ApiService] LoginAsync: Exception={ex.Message}");
+                IsConnected = false;
+            }
             return null;
+        }
+
+        // Change Password
+        public async Task<(bool Success, string? Error)> ChangePasswordAsync(string currentPassword, string newPassword)
+        {
+            try
+            {
+                var response = await _http.PostAsJsonAsync("/api/auth/change-password", new { currentPassword, newPassword });
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, null);
+                }
+                
+                var error = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    var errorObj = JsonSerializer.Deserialize<Dictionary<string, string>>(error, _jsonOptions);
+                    if (errorObj != null && errorObj.TryGetValue("message", out var message))
+                    {
+                        return (false, message);
+                    }
+                }
+                catch { }
+                
+                return (false, $"Ошибка: {response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message);
+            }
         }
 
         // Clients
@@ -584,6 +627,58 @@ namespace HQStudio.Services
             }
             catch { return false; }
         }
+
+        public async Task<(bool Success, string? Error)> ResetUserPasswordAsync(int id)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"ResetUserPasswordAsync: Sending request for user ID={id}");
+                var response = await _http.PostAsync($"/api/users/{id}/reset-password", null);
+                System.Diagnostics.Debug.WriteLine($"ResetUserPasswordAsync: Response status {response.StatusCode}");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    return (true, null);
+                }
+                
+                var error = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"ResetUserPasswordAsync: Error response: {error}");
+                
+                // Обработка специфичных ошибок
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return (false, $"Пользователь с ID {id} не найден в базе данных");
+                }
+                
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    return (false, "Нет прав для сброса пароля");
+                }
+                
+                // Пытаемся распарсить JSON ошибку
+                try
+                {
+                    var errorObj = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(error);
+                    if (errorObj != null && errorObj.TryGetValue("message", out var message))
+                    {
+                        return (false, message);
+                    }
+                }
+                catch { }
+                
+                return (false, $"Ошибка сервера: {response.StatusCode}");
+            }
+            catch (HttpRequestException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ResetUserPasswordAsync: HttpException: {ex.Message}");
+                return (false, "Сервер недоступен. Проверьте подключение к API.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ResetUserPasswordAsync: Exception: {ex.Message}");
+                return (false, ex.Message);
+            }
+        }
     }
 
     // Session DTOs
@@ -628,6 +723,7 @@ namespace HQStudio.Services
     {
         public string Token { get; set; } = "";
         public ApiUser User { get; set; } = new();
+        public bool MustChangePassword { get; set; }
     }
 
     public class ApiUser
@@ -635,7 +731,33 @@ namespace HQStudio.Services
         public int Id { get; set; }
         public string Login { get; set; } = "";
         public string Name { get; set; } = "";
+        [System.Text.Json.Serialization.JsonConverter(typeof(RoleConverter))]
         public string Role { get; set; } = "";
+    }
+
+    // Конвертер для Role (может приходить как число или строка)
+    public class RoleConverter : System.Text.Json.Serialization.JsonConverter<string>
+    {
+        public override string Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+        {
+            if (reader.TokenType == System.Text.Json.JsonTokenType.Number)
+            {
+                var num = reader.GetInt32();
+                return num switch
+                {
+                    0 => "Admin",
+                    1 => "Editor", 
+                    2 => "Manager",
+                    _ => "User"
+                };
+            }
+            return reader.GetString() ?? "User";
+        }
+
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, string value, System.Text.Json.JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value);
+        }
     }
 
     public class ApiClient
