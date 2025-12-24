@@ -10,18 +10,27 @@
         ResizeMode="NoResize"
         Topmost="True">
 
-    <Border Background="#0A0A0A" CornerRadius="24" BorderBrush="#1A1A1A" BorderThickness="1">
-
+    <Border Background="{DynamicResource BgLoginBrush}" CornerRadius="24" 
+            BorderBrush="{DynamicResource BorderLoginBrush}" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="30" ShadowDepth="5" Opacity="0.15"/>
+        </Border.Effect>
         
         <Grid>
             <!-- Background Glow -->
             <Ellipse Width="400" Height="400" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-50,0,0">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
+                        <GradientStop Color="{DynamicResource TextPrimary}" Offset="0"/>
+                        <GradientStop Color="Transparent" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+                <Ellipse.OpacityMask>
+                    <RadialGradientBrush>
                         <GradientStop Color="#15FFFFFF" Offset="0"/>
                         <GradientStop Color="#00FFFFFF" Offset="1"/>
                     </RadialGradientBrush>
-                </Ellipse.Fill>
+                </Ellipse.OpacityMask>
             </Ellipse>
 
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -35,36 +44,36 @@
                                Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"
                                FontFamily="Segoe UI Black">
                         <TextBlock.Effect>
-                            <DropShadowEffect x:Name="LogoGlow" Color="White" BlurRadius="50" ShadowDepth="0" Opacity="0.7"/>
+                            <DropShadowEffect x:Name="LogoGlow" Color="{DynamicResource TextPrimary}" BlurRadius="50" ShadowDepth="0" Opacity="0.7"/>
                         </TextBlock.Effect>
                     </TextBlock>
                 </Border>
                 
                 <TextBlock x:Name="StudioText" Text="STUDIO" FontSize="42" FontWeight="Light" 
-                           Foreground="#606060" HorizontalAlignment="Center" Opacity="0"/>
+                           Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Opacity="0"/>
                 
                 <TextBlock x:Name="TaglineText" Text="ПРОФЕССИОНАЛЬНЫЙ ТЮНИНГ АВТОМОБИЛЕЙ" 
-                           FontSize="13" Foreground="#404040" HorizontalAlignment="Center"
+                           FontSize="13" Foreground="{DynamicResource TextDarkBrush}" HorizontalAlignment="Center"
                            Margin="0,20,0,0" Opacity="0"/>
 
                 <!-- Loading Bar -->
-                <Border Margin="0,50,0,0" Width="300" Height="4" Background="{DynamicResource BgAvatarBrush}" CornerRadius="2">
-                    <Border x:Name="LoadingBar" Width="0" Height="4" Background="White" 
+                <Border Margin="0,50,0,0" Width="300" Height="4" Background="{DynamicResource BgHoverBrush}" CornerRadius="2">
+                    <Border x:Name="LoadingBar" Width="0" Height="4" Background="{DynamicResource TextPrimaryBrush}" 
                             CornerRadius="2" HorizontalAlignment="Left">
                         <Border.Effect>
-                            <DropShadowEffect Color="White" BlurRadius="10" ShadowDepth="0" Opacity="0.5"/>
+                            <DropShadowEffect Color="{DynamicResource TextPrimary}" BlurRadius="10" ShadowDepth="0" Opacity="0.5"/>
                         </Border.Effect>
                     </Border>
                 </Border>
 
                 <TextBlock x:Name="LoadingText" Text="Загрузка..." FontSize="12" 
-                           Foreground="#505050" HorizontalAlignment="Center" Margin="0,16,0,0" Opacity="0"/>
+                           Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,16,0,0" Opacity="0"/>
             </StackPanel>
 
             <!-- Version & Copyright -->
             <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,30">
-                <TextBlock x:Name="VersionText" FontSize="11" Foreground="#303030" HorizontalAlignment="Center"/>
-                <TextBlock x:Name="CopyrightText" FontSize="10" Foreground="#252525" 
+                <TextBlock x:Name="VersionText" FontSize="11" Foreground="{DynamicResource TextDarkBrush}" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="CopyrightText" FontSize="10" Foreground="{DynamicResource TextDarkBrush}" 
                            HorizontalAlignment="Center" Margin="0,4,0,0"/>
             </StackPanel>
         </Grid>
