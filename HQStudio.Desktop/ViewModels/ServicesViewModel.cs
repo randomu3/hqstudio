@@ -17,7 +17,10 @@ namespace HQStudio.ViewModels
         private string _searchText = string.Empty;
         private List<Service> _allServices = new();
         private bool _isLoading;
+        private int _currentPage = 1;
+        private int _totalPages = 1;
         private int _totalServices;
+        private const int PageSize = 10;
 
         public ObservableCollection<Service> Services { get; } = new();
         
@@ -33,6 +36,7 @@ namespace HQStudio.ViewModels
             set
             {
                 SetProperty(ref _searchText, value);
+                CurrentPage = 1;
                 FilterServices();
             }
         }
@@ -49,30 +53,70 @@ namespace HQStudio.ViewModels
 
         public bool ShowEmptyState => !IsLoading && Services.Count == 0;
 
+        public int CurrentPage
+        {
+            get => _currentPage;
+            set { SetProperty(ref _currentPage, value); OnPropertyChanged(nameof(PageInfo)); }
+        }
+
+        public int TotalPages
+        {
+            get => _totalPages;
+            set { SetProperty(ref _totalPages, value); OnPropertyChanged(nameof(PageInfo)); }
+        }
+
         public int TotalServices
         {
             get => _totalServices;
             set => SetProperty(ref _totalServices, value);
         }
 
+        public string PageInfo => $"Страница {CurrentPage} из {TotalPages}";
+        public bool CanGoPrevious => CurrentPage > 1 && !IsLoading;
+        public bool CanGoNext => CurrentPage < TotalPages && !IsLoading;
+
         public ICommand AddServiceCommand { get; }
         public ICommand EditServiceCommand { get; }
         public ICommand DeleteServiceCommand { get; }
         public ICommand RefreshCommand { get; }
+        public ICommand PreviousPageCommand { get; }
+        public ICommand NextPageCommand { get; }
 
         public ServicesViewModel()
         {
             AddServiceCommand = new RelayCommand(_ => AddServiceAsync());
             EditServiceCommand = new RelayCommand(_ => EditServiceAsync(), _ => SelectedService != null);
-            DeleteServiceCommand = new RelayCommand(_ => DeleteServiceAsync(), _ => SelectedService != null);
+            DeleteServiceCommand = new RelayCommand(_ => DeleteServiceAsync());
             RefreshCommand = new RelayCommand(async _ => await LoadServicesAsync());
+            PreviousPageCommand = new RelayCommand(_ => PreviousPage());
+            NextPageCommand = new RelayCommand(_ => NextPage());
             _ = LoadServicesAsync();
+        }
+
+        private void PreviousPage()
+        {
+            if (CurrentPage > 1)
+            {
+                CurrentPage--;
+                FilterServices();
+            }
+        }
+
+        private void NextPage()
+        {
+            if (CurrentPage < TotalPages)
+            {
+                CurrentPage++;
+                FilterServices();
+            }
         }
 
         private async Task LoadServicesAsync()
         {
             if (IsLoading) return;
             IsLoading = true;
+            OnPropertyChanged(nameof(CanGoPrevious));
+            OnPropertyChanged(nameof(CanGoNext));
             
             try
             {
@@ -107,6 +151,8 @@ namespace HQStudio.ViewModels
             finally
             {
                 IsLoading = false;
+                OnPropertyChanged(nameof(CanGoPrevious));
+                OnPropertyChanged(nameof(CanGoNext));
             }
         }
 
@@ -140,12 +186,17 @@ namespace HQStudio.ViewModels
 
             var orderedList = filtered.OrderBy(s => s.Category).ThenBy(s => s.Name).ToList();
             TotalServices = orderedList.Count;
+            TotalPages = Math.Max(1, (int)Math.Ceiling(orderedList.Count / (double)PageSize));
+            
+            if (CurrentPage > TotalPages) CurrentPage = TotalPages;
 
-            foreach (var service in orderedList)
+            foreach (var service in orderedList.Skip((CurrentPage - 1) * PageSize).Take(PageSize))
             {
                 Services.Add(service);
             }
             
+            OnPropertyChanged(nameof(CanGoPrevious));
+            OnPropertyChanged(nameof(CanGoNext));
             OnPropertyChanged(nameof(ShowEmptyState));
         }
 
@@ -172,7 +223,7 @@ namespace HQStudio.ViewModels
                     var created = await _apiService.CreateServiceAsync(apiService);
                     if (created == null)
                     {
-                        MessageBox.Show("Не удалось создать услугу", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ConfirmDialog.ShowInfo("Ошибка", "Не удалось создать услугу", ConfirmDialog.DialogType.Error);
                         return;
                     }
                 }
@@ -221,13 +272,13 @@ namespace HQStudio.ViewModels
                         
                         if (!success)
                         {
-                            MessageBox.Show("Не удалось обновить услугу", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                            ConfirmDialog.ShowInfo("Ошибка", "Не удалось обновить услугу", ConfirmDialog.DialogType.Error);
                             return;
                         }
                     }
                     else
                     {
-                        MessageBox.Show("Нет соединения с сервером", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        ConfirmDialog.ShowInfo("Ошибка", "Нет соединения с сервером", ConfirmDialog.DialogType.Warning);
                         return;
                     }
                 }
@@ -242,22 +293,29 @@ namespace HQStudio.ViewModels
 
         private async void DeleteServiceAsync()
         {
-            if (SelectedService == null) return;
+            if (SelectedService == null)
+            {
+                ConfirmDialog.ShowInfo(
+                    "Удаление услуги",
+                    "Выберите услугу для удаления.\n\nКликните на услугу в списке, чтобы выбрать её.",
+                    ConfirmDialog.DialogType.Warning);
+                return;
+            }
             
-            var result = MessageBox.Show(
-                $"Удалить услугу \"{SelectedService.Name}\"?",
-                "Подтверждение",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            var confirmed = ConfirmDialog.Show(
+                "Удалить услугу?",
+                $"Вы уверены, что хотите удалить услугу \"{SelectedService.Name}\"?\n\nЭто действие нельзя отменить.",
+                ConfirmDialog.DialogType.Warning,
+                "Удалить", "Отмена");
             
-            if (result == MessageBoxResult.Yes)
+            if (confirmed)
             {
                 if (_settings.UseApi && _apiService.IsConnected)
                 {
                     var success = await _apiService.DeleteServiceAsync(SelectedService.Id);
                     if (!success)
                     {
-                        MessageBox.Show("Не удалось удалить услугу", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ConfirmDialog.ShowInfo("Ошибка", "Не удалось удалить услугу", ConfirmDialog.DialogType.Error);
                         return;
                     }
                 }
@@ -267,6 +325,7 @@ namespace HQStudio.ViewModels
                     _dataService.SaveData();
                 }
                 
+                SelectedService = null;
                 await LoadServicesAsync();
             }
         }
