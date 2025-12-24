@@ -19,6 +19,43 @@ namespace HQStudio.Services
             Environment.GetEnvironmentVariable("SCREENSHOT_OUTPUT") ?? "screenshots";
 
         /// <summary>
+        /// Скрытый режим - окна рендерятся за пределами экрана
+        /// </summary>
+        public static bool IsHiddenMode =>
+            Environment.GetEnvironmentVariable("SCREENSHOT_HIDDEN") == "true";
+
+        /// <summary>
+        /// Подготавливает окно для скриншота (скрытый режим - за пределами экрана)
+        /// </summary>
+        public static void PrepareWindowForScreenshot(Window window)
+        {
+            if (IsHiddenMode)
+            {
+                // Перемещаем окно за пределы видимой области
+                window.WindowStartupLocation = WindowStartupLocation.Manual;
+                window.Left = -10000;
+                window.Top = -10000;
+                window.ShowInTaskbar = false;
+            }
+        }
+
+        /// <summary>
+        /// Показывает окно и ждёт его полной загрузки
+        /// </summary>
+        public static async Task ShowAndWaitAsync(Window window, int waitMs = 500)
+        {
+            PrepareWindowForScreenshot(window);
+            window.Show();
+            
+            // Ждём рендеринга
+            await Task.Delay(waitMs);
+            
+            // Принудительно обновляем layout
+            window.UpdateLayout();
+            await window.Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+        }
+
+        /// <summary>
         /// Делает скриншот указанного окна
         /// </summary>
         public static void CaptureWindow(Window window, string filename)

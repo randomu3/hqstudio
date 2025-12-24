@@ -14,33 +14,55 @@ C:\actions-runner\
 
 ## Запуск Runner'а
 
-**ВАЖНО:** После перезагрузки ПК runner нужно запустить вручную!
+### Вариант 1: В фоне (рекомендуется)
+```powershell
+Start-Process -FilePath "C:\actions-runner\run.cmd" -WorkingDirectory "C:\actions-runner" -WindowStyle Hidden
+```
 
+### Вариант 2: В отдельном окне
 ```powershell
 C:\actions-runner\run.cmd
 ```
 
-Окно PowerShell должно оставаться открытым пока runner работает.
+**ВАЖНО:** После перезагрузки ПК runner нужно запустить вручную!
+
+## Автозапуск при старте Windows
+
+Запустить PowerShell **от администратора** и выполнить:
+```powershell
+$action = New-ScheduledTaskAction -Execute "C:\actions-runner\run.cmd" -WorkingDirectory "C:\actions-runner"
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId "$env:USERNAME" -LogonType Interactive -RunLevel Highest
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+Register-ScheduledTask -TaskName "GitHub Actions Runner" -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force
+```
 
 ## Проверка статуса
-- GitHub: Settings → Actions → Runners
-- Должен быть статус "Idle" (зелёный)
+```powershell
+# Проверить процесс
+Get-Process -Name "Runner.Listener" -ErrorAction SilentlyContinue
+
+# Или через GitHub
+# Settings → Actions → Runners → должен быть статус "Idle" (зелёный)
+```
+
 - Имя runner'а: `hqstudio-local`
 - Labels: `self-hosted`, `Windows`, `X64`, `screenshots`
+
+## Скрытый режим скриншотов
+
+При запуске workflow скриншоты делаются в скрытом режиме:
+- `SCREENSHOT_HIDDEN=true` — окна рендерятся за пределами экрана (-10000, -10000)
+- Процесс запускается с `-WindowStyle Hidden`
+- Пользователь не видит мелькающих окон
 
 ## Если runner не запущен
 Workflows с `runs-on: self-hosted` будут висеть в очереди "Waiting for a runner".
 
-## Автозапуск (опционально)
-Чтобы runner запускался автоматически при старте Windows:
-
-1. Открыть Task Scheduler (taskschd.msc)
-2. Create Basic Task → "GitHub Actions Runner"
-3. Trigger: "When the computer starts"
-4. Action: Start a program
-   - Program: `C:\actions-runner\run.cmd`
-   - Start in: `C:\actions-runner`
-5. Finish
+## Остановка runner'а
+```powershell
+Stop-Process -Name "Runner.Listener" -Force
+```
 
 ## Безопасность
 ⚠️ Public репозиторий + self-hosted runner = риск. Злоумышленник может создать PR с вредоносным кодом, который выполнится на твоём ПК.

@@ -42,20 +42,17 @@ namespace HQStudio
 
         private async Task RunScreenshotModeAsync()
         {
-            Console.WriteLine("Screenshot mode enabled");
+            Console.WriteLine($"Screenshot mode enabled (hidden: {ScreenshotService.IsHiddenMode})");
             
             // 1. Скриншот окна входа
             var loginWindow = new LoginWindow();
-            loginWindow.Show();
-            await Task.Delay(1000);
+            await ScreenshotService.ShowAndWaitAsync(loginWindow, 1000);
             ScreenshotService.CaptureWindow(loginWindow, "01-login.png");
             
             // 2. Открываем главное окно напрямую (без авторизации)
             var mainWindow = new MainWindow();
-            mainWindow.Show();
+            await ScreenshotService.ShowAndWaitAsync(mainWindow, 1500);
             loginWindow.Close();
-            
-            await Task.Delay(1500); // Ждём загрузки данных
             
             // 3. Скриншот Dashboard
             ScreenshotService.CaptureWindow(mainWindow, "02-dashboard.png");

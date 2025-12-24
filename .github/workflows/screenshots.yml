@@ -33,12 +33,13 @@ jobs:
       - name: Run Desktop in Screenshot Mode
         env:
           SCREENSHOT_MODE: 'true'
+          SCREENSHOT_HIDDEN: 'true'
           SCREENSHOT_OUTPUT: 'docs/screenshots'
         run: |
           $exePath = "HQStudio.Desktop\bin\Release\net8.0-windows\HQStudio.Desktop.exe"
-          Write-Host "Starting: $exePath"
+          Write-Host "Starting: $exePath (hidden mode)"
           if (Test-Path $exePath) {
-            $process = Start-Process -FilePath $exePath -PassThru -WorkingDirectory (Get-Location)
+            $process = Start-Process -FilePath $exePath -PassThru -WorkingDirectory (Get-Location) -WindowStyle Hidden
             # Ждём завершения (макс 90 секунд)
             $process | Wait-Process -Timeout 90 -ErrorAction SilentlyContinue
             if (!$process.HasExited) {
