@@ -117,6 +117,9 @@ namespace HQStudio.ViewModels
                             OrderCount = s.Count
                         });
                     }
+                    
+                    // Lazy load графиков после основных данных
+                    _ = Task.Run(() => System.Windows.Application.Current?.Dispatcher?.Invoke(LoadRevenueChart));
                     return;
                 }
             }
@@ -134,7 +137,10 @@ namespace HQStudio.ViewModels
             }
 
             LoadServiceStatistics();
-            LoadRevenueChart();
+            
+            // Lazy load графиков - отложенная загрузка для быстрого старта UI
+            _ = Task.Delay(100).ContinueWith(_ => 
+                System.Windows.Application.Current?.Dispatcher?.Invoke(LoadRevenueChart));
         }
 
         private void LoadServiceStatistics()

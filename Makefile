@@ -121,7 +121,7 @@ docker-build: ## Собрать Docker образы
 	@echo "$(GREEN)✓ Docker образы собраны$(RESET)"
 
 # ===========================================
-# Релиз
+# Релиз и публикация
 # ===========================================
 
 release-dry: ## Dry-run релиза
@@ -129,6 +129,16 @@ release-dry: ## Dry-run релиза
 
 commit: ## Интерактивный коммит (Commitizen)
 	npm run commit
+
+publish-desktop: ## Собрать Desktop для распространения
+	@echo "$(CYAN)Публикация Desktop...$(RESET)"
+	powershell -ExecutionPolicy Bypass -File scripts/publish-desktop.ps1 -CreateZip
+	@echo "$(GREEN)✓ Desktop опубликован в dist/$(RESET)"
+
+publish-installer: ## Создать инсталлятор Desktop (требует Inno Setup)
+	@echo "$(CYAN)Создание инсталлятора...$(RESET)"
+	powershell -ExecutionPolicy Bypass -File scripts/publish-desktop.ps1 -CreateInstaller
+	@echo "$(GREEN)✓ Инсталлятор создан в dist/$(RESET)"
 
 # ===========================================
 # Утилиты

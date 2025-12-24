@@ -15,6 +15,20 @@
     <Product>HQ Studio Desktop</Product>
     <Description>CRM система для автотюнинг студии</Description>
     <Copyright>© $([System.DateTime]::Now.Year) HQ Studio. Все права защищены.</Copyright>
+    
+    <!-- Оптимизации для быстрого запуска -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    
+    <!-- Trimming (осторожно с WPF) -->
+    <PublishTrimmed>false</PublishTrimmed>
+    
+    <!-- Tiered compilation для быстрого старта -->
+    <TieredCompilation>true</TieredCompilation>
+    <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
   </PropertyGroup>
 
   <ItemGroup>
