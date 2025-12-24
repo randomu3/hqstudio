@@ -98,6 +98,118 @@
                     <TextBlock Text="Вход в систему..." FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"/>
                 </StackPanel>
             </Border>
+
+            <!-- Server Error Overlay - Minimalist B&W style -->
+            <Border Grid.RowSpan="2" Background="{DynamicResource BgOverlayBrush}" CornerRadius="20"
+                    Visibility="{Binding ShowServerError, Converter={StaticResource BoolToVisibility}}">
+                
+                <!-- Centered modal card -->
+                <Border Background="{DynamicResource BgCardBrush}" CornerRadius="16" 
+                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                        BorderBrush="{DynamicResource BorderDefaultBrush}" BorderThickness="1"
+                        MaxWidth="320" Margin="24">
+                    <StackPanel Margin="32">
+                        
+                        <!-- Icon -->
+                        <Border Width="64" Height="64" CornerRadius="32" 
+                                Background="{DynamicResource BgInputBrush}"
+                                HorizontalAlignment="Center" Margin="0,0,0,20">
+                            <TextBlock Text="!" FontSize="32" FontWeight="Bold" 
+                                       Foreground="{DynamicResource TextPrimaryBrush}" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        
+                        <!-- Title -->
+                        <TextBlock Text="Сервер недоступен" FontSize="18" FontWeight="SemiBold" 
+                                   Foreground="{DynamicResource TextPrimaryBrush}" 
+                                   HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        
+                        <!-- Description -->
+                        <TextBlock Text="Авторизация временно невозможна" FontSize="13" 
+                                   Foreground="{DynamicResource TextMutedBrush}" 
+                                   HorizontalAlignment="Center" Margin="0,0,0,24"/>
+                        
+                        <!-- Divider -->
+                        <Border Height="1" Background="{DynamicResource BorderDefaultBrush}" Margin="0,0,0,20"/>
+                        
+                        <!-- Contact section -->
+                        <TextBlock Text="СВЯЗАТЬСЯ С РАЗРАБОТЧИКОМ" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextMutedBrush}" 
+                                   HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                        
+                        <!-- Contact buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
+                            <!-- Telegram -->
+                            <Button Click="TelegramButton_Click" Cursor="Hand" Margin="0,0,8,0">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="bd" Background="{DynamicResource BgInputBrush}" 
+                                                            BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                                            BorderThickness="1" CornerRadius="10" Padding="14,10">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="✈" FontSize="14" 
+                                                                       Foreground="{DynamicResource TextPrimaryBrush}" 
+                                                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="@xxxu7" FontSize="12" FontWeight="Medium"
+                                                                       Foreground="{DynamicResource TextPrimaryBrush}" 
+                                                                       VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="bd" Property="BorderBrush" 
+                                                                    Value="{DynamicResource TextPrimaryBrush}"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            
+                            <!-- VK -->
+                            <Button Click="VkButton_Click" Cursor="Hand" Margin="8,0,0,0">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="bd" Background="{DynamicResource BgInputBrush}" 
+                                                            BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                                            BorderThickness="1" CornerRadius="10" Padding="14,10">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="VK" FontSize="12" FontWeight="Bold"
+                                                                       Foreground="{DynamicResource TextPrimaryBrush}" 
+                                                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="xxxuy" FontSize="12" FontWeight="Medium"
+                                                                       Foreground="{DynamicResource TextPrimaryBrush}" 
+                                                                       VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="bd" Property="BorderBrush" 
+                                                                    Value="{DynamicResource TextPrimaryBrush}"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                        
+                        <!-- Retry Button -->
+                        <Button Content="Повторить" Command="{Binding RetryConnectionCommand}"
+                                Style="{DynamicResource BtnPrimary}" Height="44"/>
+                    </StackPanel>
+                </Border>
+            </Border>
         </Grid>
     </Border>
 </Window>

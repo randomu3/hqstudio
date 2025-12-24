@@ -1,4 +1,5 @@
 using HQStudio.ViewModels;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 
@@ -62,6 +63,35 @@ namespace HQStudio.Views
                     e.Handled = true;
                 }
             }
+        }
+
+        private void TelegramLink_Click(object sender, MouseButtonEventArgs e)
+        {
+            OpenUrl("https://t.me/xxxu7");
+        }
+
+        private void VkLink_Click(object sender, MouseButtonEventArgs e)
+        {
+            OpenUrl("https://vk.com/xxxuy");
+        }
+
+        private void TelegramButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenUrl("https://t.me/xxxu7");
+        }
+
+        private void VkButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenUrl("https://vk.com/xxxuy");
+        }
+
+        private void OpenUrl(string url)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch { }
         }
     }
 }
