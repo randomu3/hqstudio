@@ -35,11 +35,21 @@ jobs:
           SCREENSHOT_MODE: 'true'
           SCREENSHOT_OUTPUT: 'docs/screenshots'
         run: |
-          $process = Start-Process -FilePath "HQStudio.Desktop/bin/Release/net8.0-windows/HQStudio.Desktop.exe" -PassThru
-          # Ждём завершения (макс 60 секунд)
-          $process | Wait-Process -Timeout 60 -ErrorAction SilentlyContinue
-          if (!$process.HasExited) {
-            $process | Stop-Process -Force
+          $exePath = "HQStudio.Desktop\bin\Release\net8.0-windows\HQStudio.Desktop.exe"
+          Write-Host "Starting: $exePath"
+          if (Test-Path $exePath) {
+            $process = Start-Process -FilePath $exePath -PassThru -WorkingDirectory (Get-Location)
+            # Ждём завершения (макс 90 секунд)
+            $process | Wait-Process -Timeout 90 -ErrorAction SilentlyContinue
+            if (!$process.HasExited) {
+              Write-Host "Process timeout, stopping..."
+              $process | Stop-Process -Force
+            }
+            Write-Host "Exit code: $($process.ExitCode)"
+          } else {
+            Write-Host "ERROR: Exe not found at $exePath"
+            Get-ChildItem -Recurse -Filter "*.exe" | Select-Object FullName
+            exit 1
           }
       
       - name: List screenshots
