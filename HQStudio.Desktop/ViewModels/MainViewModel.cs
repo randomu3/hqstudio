@@ -10,6 +10,7 @@ namespace HQStudio.ViewModels
         private BaseViewModel? _currentView;
         private string _currentViewName = "Dashboard";
         private int? _pendingOrderId;
+        private bool _hasNewNotifications;
 
         public BaseViewModel? CurrentView
         {
@@ -21,6 +22,12 @@ namespace HQStudio.ViewModels
         {
             get => _currentViewName;
             set => SetProperty(ref _currentViewName, value);
+        }
+
+        public bool HasNewNotifications
+        {
+            get => _hasNewNotifications;
+            set => SetProperty(ref _hasNewNotifications, value);
         }
 
         public string UserDisplayName => _dataService.CurrentUser?.DisplayName ?? "Гость";
@@ -38,12 +45,14 @@ namespace HQStudio.ViewModels
         public ICommand NavigateCommand { get; }
         public ICommand LogoutCommand { get; }
         public ICommand? RefreshCommand { get; }
+        public ICommand ClearNotificationsCommand { get; }
 
         public MainViewModel()
         {
             NavigateCommand = new RelayCommand(Navigate);
             LogoutCommand = new RelayCommand(_ => Logout());
             RefreshCommand = new RelayCommand(_ => Refresh());
+            ClearNotificationsCommand = new RelayCommand(_ => HasNewNotifications = false);
             CurrentView = new DashboardViewModel();
         }
 

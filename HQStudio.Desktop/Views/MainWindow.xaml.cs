@@ -1,3 +1,4 @@
+using HQStudio.Services;
 using HQStudio.ViewModels;
 using System.Windows;
 using System.Windows.Input;
@@ -9,6 +10,45 @@ namespace HQStudio.Views
         public MainWindow()
         {
             InitializeComponent();
+            InitializeNotifications();
+        }
+
+        private void InitializeNotifications()
+        {
+            // Запускаем polling для уведомлений
+            var notifications = NotificationService.Instance;
+            
+            notifications.OnNewCallback += (name, phone) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    // Можно добавить визуальный индикатор в UI
+                    if (DataContext is MainViewModel vm)
+                    {
+                        vm.HasNewNotifications = true;
+                    }
+                });
+            };
+
+            notifications.OnNewOrder += (client, orderId) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (DataContext is MainViewModel vm)
+                    {
+                        vm.HasNewNotifications = true;
+                    }
+                });
+            };
+
+            // Запускаем polling (каждые 30 секунд)
+            notifications.StartPolling(30);
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            NotificationService.Instance.StopPolling();
+            base.OnClosed(e);
         }
 
         private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

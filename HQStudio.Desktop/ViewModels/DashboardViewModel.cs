@@ -1,6 +1,11 @@
 using HQStudio.Models;
 using HQStudio.Services;
 using System.Collections.ObjectModel;
+using System.Windows.Input;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Painting;
+using SkiaSharp;
 
 namespace HQStudio.ViewModels
 {
@@ -19,6 +24,9 @@ namespace HQStudio.ViewModels
         private decimal _totalRevenue;
         private int _newCallbacks;
         private bool _isApiConnected;
+        private ISeries[] _revenueSeries = Array.Empty<ISeries>();
+        private Axis[] _revenueXAxes = Array.Empty<Axis>();
+        private Axis[] _revenueYAxes = Array.Empty<Axis>();
 
         public int TotalClients
         {
@@ -56,8 +64,32 @@ namespace HQStudio.ViewModels
             set => SetProperty(ref _isApiConnected, value);
         }
 
+        // Графики
+        public ISeries[] RevenueSeries
+        {
+            get => _revenueSeries;
+            set => SetProperty(ref _revenueSeries, value);
+        }
+
+        public Axis[] RevenueXAxes
+        {
+            get => _revenueXAxes;
+            set => SetProperty(ref _revenueXAxes, value);
+        }
+
+        public Axis[] RevenueYAxes
+        {
+            get => _revenueYAxes;
+            set => SetProperty(ref _revenueYAxes, value);
+        }
+
+        public ICommand GenerateWeeklyReportCommand { get; }
+        public ICommand GenerateMonthlyReportCommand { get; }
+
         public DashboardViewModel()
         {
+            GenerateWeeklyReportCommand = new RelayCommand(_ => GenerateWeeklyReport());
+            GenerateMonthlyReportCommand = new RelayCommand(_ => GenerateMonthlyReport());
             LoadData();
         }
 
@@ -102,6 +134,7 @@ namespace HQStudio.ViewModels
             }
 
             LoadServiceStatistics();
+            LoadRevenueChart();
         }
 
         private void LoadServiceStatistics()
@@ -125,6 +158,177 @@ namespace HQStudio.ViewModels
             {
                 ServiceStatistics.Add(stat);
             }
+        }
+
+        private void LoadRevenueChart()
+        {
+            // Данные за последние 7 дней
+            var days = Enumerable.Range(0, 7)
+                .Select(i => DateTime.Today.AddDays(-6 + i))
+                .ToList();
+
+            var labels = days.Select(d => d.ToString("dd.MM")).ToArray();
+            var values = days.Select(d =>
+            {
+                return (double)_dataService.Orders
+                    .Where(o => o.CreatedAt.Date == d && o.Status == "Завершен")
+                    .Sum(o => o.TotalPrice);
+            }).ToArray();
+
+            RevenueSeries = new ISeries[]
+            {
+                new ColumnSeries<double>
+                {
+                    Values = values,
+                    Fill = new SolidColorPaint(new SKColor(76, 175, 80)), // Green
+                    Stroke = null,
+                    MaxBarWidth = 30
+                }
+            };
+
+            RevenueXAxes = new Axis[]
+            {
+                new Axis
+                {
+                    Labels = labels,
+                    LabelsPaint = new SolidColorPaint(new SKColor(150, 150, 150)),
+                    TextSize = 11
+                }
+            };
+
+            RevenueYAxes = new Axis[]
+            {
+                new Axis
+                {
+                    LabelsPaint = new SolidColorPaint(new SKColor(150, 150, 150)),
+                    TextSize = 11,
+                    Labeler = value => $"{value:N0} ₽"
+                }
+            };
+        }
+
+        private void GenerateWeeklyReport()
+        {
+            try
+            {
+                var endDate = DateTime.Today;
+                var startDate = endDate.AddDays(-7);
+                var reportData = BuildReportData(startDate, endDate);
+                
+                var pdfBytes = ReportService.Instance.GenerateWeeklyReport(reportData);
+                
+                var dialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    FileName = $"HQStudio_Weekly_{endDate:yyyy-MM-dd}",
+                    DefaultExt = ".pdf",
+                    Filter = "PDF документы|*.pdf"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    ReportService.Instance.SaveReport(pdfBytes, dialog.FileName);
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = dialog.FileName,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Ошибка генерации отчёта: {ex.Message}", "Ошибка",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        private void GenerateMonthlyReport()
+        {
+            try
+            {
+                var endDate = DateTime.Today;
+                var startDate = new DateTime(endDate.Year, endDate.Month, 1);
+                var reportData = BuildReportData(startDate, endDate);
+                
+                var pdfBytes = ReportService.Instance.GenerateMonthlyReport(reportData);
+                
+                var dialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    FileName = $"HQStudio_Monthly_{endDate:yyyy-MM}",
+                    DefaultExt = ".pdf",
+                    Filter = "PDF документы|*.pdf"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    ReportService.Instance.SaveReport(pdfBytes, dialog.FileName);
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = dialog.FileName,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Ошибка генерации отчёта: {ex.Message}", "Ошибка",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        private ReportData BuildReportData(DateTime startDate, DateTime endDate)
+        {
+            var orders = _dataService.Orders
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate.AddDays(1))
+                .ToList();
+
+            var dailyRevenue = orders
+                .GroupBy(o => o.CreatedAt.Date)
+                .Select(g => new DailyRevenue
+                {
+                    Date = g.Key,
+                    OrderCount = g.Count(),
+                    Revenue = g.Where(o => o.Status == "Завершен").Sum(o => o.TotalPrice)
+                })
+                .OrderBy(d => d.Date)
+                .ToList();
+
+            var serviceStats = _dataService.Services
+                .Select(s => new ReportServiceStat
+                {
+                    ServiceName = s.Name,
+                    Count = orders.Count(o => o.ServiceIds.Contains(s.Id)),
+                    Revenue = orders
+                        .Where(o => o.ServiceIds.Contains(s.Id) && o.Status == "Завершен")
+                        .Sum(o => o.TotalPrice / Math.Max(o.ServiceIds.Count, 1))
+                })
+                .Where(s => s.Count > 0)
+                .OrderByDescending(s => s.Count)
+                .ToList();
+
+            var orderSummaries = orders
+                .Select(o => new OrderSummary
+                {
+                    Id = o.Id,
+                    ClientName = _dataService.Clients.FirstOrDefault(c => c.Id == o.ClientId)?.Name ?? "—",
+                    Date = o.CreatedAt,
+                    Status = o.Status,
+                    TotalPrice = o.TotalPrice
+                })
+                .OrderByDescending(o => o.Date)
+                .ToList();
+
+            return new ReportData
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                TotalOrders = orders.Count,
+                CompletedOrders = orders.Count(o => o.Status == "Завершен"),
+                InProgressOrders = orders.Count(o => o.Status == "В работе"),
+                TotalRevenue = orders.Where(o => o.Status == "Завершен").Sum(o => o.TotalPrice),
+                DailyRevenue = dailyRevenue,
+                ServiceStats = serviceStats,
+                Orders = orderSummaries
+            };
         }
     }
 }

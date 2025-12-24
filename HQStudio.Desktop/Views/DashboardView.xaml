@@ -1,6 +1,7 @@
 <UserControl x:Class="HQStudio.Views.DashboardView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF">
     
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel>
@@ -178,6 +179,26 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+            </Border>
+
+            <!-- Revenue Chart -->
+            <Grid Margin="0,0,0,16">
+                <TextBlock Text="📈 ВЫРУЧКА ЗА НЕДЕЛЮ" Style="{DynamicResource TextLabel}"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="📄 Недельный отчёт" Style="{DynamicResource ButtonSecondary}" 
+                            Command="{Binding GenerateWeeklyReportCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                    <Button Content="📊 Месячный отчёт" Style="{DynamicResource ButtonSecondary}" 
+                            Command="{Binding GenerateMonthlyReportCommand}" Padding="12,6"/>
+                </StackPanel>
+            </Grid>
+            
+            <Border Style="{DynamicResource Card}" Margin="0,0,0,24" Height="250">
+                <lvc:CartesianChart 
+                    Series="{Binding RevenueSeries}"
+                    XAxes="{Binding RevenueXAxes}"
+                    YAxes="{Binding RevenueYAxes}"
+                    TooltipPosition="Top"
+                    ZoomMode="None"/>
             </Border>
 
             <!-- Contact Info -->
