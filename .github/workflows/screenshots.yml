@@ -2,15 +2,49 @@ name: Desktop Screenshots
 
 on:
   workflow_dispatch:  # Ручной запуск
+  schedule:
+    - cron: '0 6 * * 1'  # Каждый понедельник в 6:00 UTC
   push:
     branches: [main]
     paths:
-      - 'HQStudio.Desktop/**/*.xaml'
-      - 'HQStudio.Desktop/**/*.cs'
-      - '.github/workflows/screenshots.yml'
+      # Только UI файлы
+      - 'HQStudio.Desktop/Views/**'
+      - 'HQStudio.Desktop/Styles/**'
+      - 'HQStudio.Desktop/App.xaml'
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Check if UI changed
+        id: check
+        run: |
+          # Для ручного запуска или расписания - всегда запускаем
+          if [ "${{ github.event_name }}" != "push" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Проверяем изменения в UI файлах
+          CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '(Views/|Styles/|App\.xaml)' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "UI files changed:"
+            echo "$CHANGED"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "No UI changes, skipping screenshots"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
   screenshots:
+    needs: check-changes
+    if: needs.check-changes.outputs.should_run == 'true'
     runs-on: self-hosted
     
     steps:
@@ -35,29 +69,32 @@ jobs:
           SCREENSHOT_OUTPUT: 'docs/screenshots'
         run: |
           $exePath = "HQStudio.Desktop\bin\Release\net8.0-windows\HQStudio.Desktop.exe"
-          Write-Host "Starting: $exePath (hidden mode)"
+          Write-Host "Starting: $exePath"
           if (Test-Path $exePath) {
-            $process = Start-Process -FilePath $exePath -PassThru -WorkingDirectory (Get-Location) -WindowStyle Hidden
-            # Ждём завершения (макс 90 секунд)
-            $process | Wait-Process -Timeout 90 -ErrorAction SilentlyContinue
+            $process = Start-Process -FilePath $exePath -PassThru -WorkingDirectory (Get-Location)
+            $process | Wait-Process -Timeout 60 -ErrorAction SilentlyContinue
             if (!$process.HasExited) {
-              Write-Host "Process timeout, stopping..."
               $process | Stop-Process -Force
             }
-            Write-Host "Exit code: $($process.ExitCode)"
           } else {
-            Write-Host "ERROR: Exe not found at $exePath"
-            Get-ChildItem -Recurse -Filter "*.exe" | Select-Object FullName
+            Write-Host "ERROR: Exe not found"
             exit 1
           }
       
-      - name: List screenshots
-        run: Get-ChildItem docs/screenshots -ErrorAction SilentlyContinue
+      - name: Check screenshots
+        run: |
+          $files = Get-ChildItem docs/screenshots/*.png -ErrorAction SilentlyContinue
+          if ($files.Count -eq 0) {
+            Write-Host "No screenshots generated!"
+            exit 1
+          }
+          Write-Host "Generated $($files.Count) screenshots"
+          $files | ForEach-Object { Write-Host "  $($_.Name) - $([math]::Round($_.Length/1KB, 1)) KB" }
       
       - name: Commit screenshots
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/screenshots/*.png
-          git diff --staged --quiet || git commit -m "docs: обновлены скриншоты Desktop приложения [skip ci]"
+          git diff --staged --quiet || git commit -m "docs: обновлены скриншоты Desktop [skip ci]"
           git push

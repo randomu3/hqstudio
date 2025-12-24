@@ -42,60 +42,50 @@ namespace HQStudio
 
         private async Task RunScreenshotModeAsync()
         {
-            Console.WriteLine($"Screenshot mode enabled (hidden: {ScreenshotService.IsHiddenMode})");
+            Console.WriteLine($"Screenshot mode: hidden={ScreenshotService.IsHiddenMode}");
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             
             // 1. Скриншот окна входа
             var loginWindow = new LoginWindow();
-            await ScreenshotService.ShowAndWaitAsync(loginWindow, 1000);
+            await ScreenshotService.ShowAndWaitAsync(loginWindow, 500);
             ScreenshotService.CaptureWindow(loginWindow, "01-login.png");
             
-            // 2. Открываем главное окно напрямую (без авторизации)
+            // 2. Открываем главное окно
             var mainWindow = new MainWindow();
-            await ScreenshotService.ShowAndWaitAsync(mainWindow, 1500);
+            await ScreenshotService.ShowAndWaitAsync(mainWindow, 800);
             loginWindow.Close();
             
             // 3. Скриншот Dashboard
             ScreenshotService.CaptureWindow(mainWindow, "02-dashboard.png");
             
-            // 4. Навигация по разделам и скриншоты
+            // 4. Навигация по разделам
             if (mainWindow.DataContext is ViewModels.MainViewModel vm)
             {
-                // Заказы
-                vm.NavigateCommand.Execute("Orders");
-                await Task.Delay(1000);
-                ScreenshotService.CaptureWindow(mainWindow, "03-orders.png");
+                var screens = new[] {
+                    ("Orders", "03-orders.png"),
+                    ("Clients", "04-clients.png"),
+                    ("Services", "05-services.png"),
+                    ("Staff", "06-staff.png"),
+                    ("Settings", "07-settings.png")
+                };
                 
-                // Клиенты
-                vm.NavigateCommand.Execute("Clients");
-                await Task.Delay(1000);
-                ScreenshotService.CaptureWindow(mainWindow, "04-clients.png");
+                foreach (var (view, filename) in screens)
+                {
+                    vm.NavigateCommand.Execute(view);
+                    await Task.Delay(400);
+                    ScreenshotService.CaptureWindow(mainWindow, filename);
+                }
                 
-                // Услуги
-                vm.NavigateCommand.Execute("Services");
-                await Task.Delay(1000);
-                ScreenshotService.CaptureWindow(mainWindow, "05-services.png");
-                
-                // Сотрудники
-                vm.NavigateCommand.Execute("Staff");
-                await Task.Delay(1000);
-                ScreenshotService.CaptureWindow(mainWindow, "06-staff.png");
-                
-                // Настройки
-                vm.NavigateCommand.Execute("Settings");
-                await Task.Delay(500);
-                ScreenshotService.CaptureWindow(mainWindow, "07-settings.png");
-                
-                // Переключаем тему и делаем скриншот
-                ThemeService.Instance.ApplyTheme(false); // Light theme
-                await Task.Delay(500);
-                
+                // Светлая тема
+                ThemeService.Instance.ApplyTheme(false);
                 vm.NavigateCommand.Execute("Dashboard");
-                await Task.Delay(500);
+                await Task.Delay(300);
                 ScreenshotService.CaptureWindow(mainWindow, "08-dashboard-light.png");
             }
             
-            Console.WriteLine("Screenshots completed!");
-            ScreenshotService.ExitAfterDelay(500);
+            sw.Stop();
+            Console.WriteLine($"Screenshots completed in {sw.ElapsedMilliseconds}ms");
+            ScreenshotService.ExitAfterDelay(200);
         }
 
         protected override void OnExit(ExitEventArgs e)
