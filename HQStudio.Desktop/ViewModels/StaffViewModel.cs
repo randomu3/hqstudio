@@ -48,7 +48,7 @@ namespace HQStudio.ViewModels
         {
             if (!_settings.UseApi)
             {
-                MessageBox.Show("API отключён в настройках", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                ConfirmDialog.ShowInfo("Информация", "API отключён в настройках", ConfirmDialog.DialogType.Warning);
                 return;
             }
 
@@ -75,7 +75,7 @@ namespace HQStudio.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                ConfirmDialog.ShowInfo("Ошибка загрузки", ex.Message, ConfirmDialog.DialogType.Error);
             }
 
             IsLoading = false;
@@ -100,11 +100,11 @@ namespace HQStudio.ViewModels
                 if (result != null)
                 {
                     await LoadUsersAsync();
-                    MessageBox.Show($"Сотрудник {result.Name} добавлен", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ConfirmDialog.ShowInfo("Успех", $"Сотрудник {result.Name} добавлен", ConfirmDialog.DialogType.Success);
                 }
                 else
                 {
-                    MessageBox.Show("Не удалось создать пользователя. Возможно, логин уже занят.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ConfirmDialog.ShowInfo("Ошибка", "Не удалось создать пользователя. Возможно, логин уже занят.", ConfirmDialog.DialogType.Warning);
                 }
             }
         }
@@ -132,7 +132,7 @@ namespace HQStudio.ViewModels
                 }
                 else
                 {
-                    MessageBox.Show("Не удалось обновить пользователя", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ConfirmDialog.ShowInfo("Ошибка", "Не удалось обновить пользователя", ConfirmDialog.DialogType.Warning);
                 }
             }
         }
@@ -143,18 +143,18 @@ namespace HQStudio.ViewModels
 
             if (SelectedUser.Login == "admin")
             {
-                MessageBox.Show("Нельзя деактивировать администратора", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ConfirmDialog.ShowInfo("Ошибка", "Нельзя деактивировать администратора", ConfirmDialog.DialogType.Warning);
                 return;
             }
 
             var action = SelectedUser.IsActive ? "деактивировать" : "активировать";
-            var result = MessageBox.Show(
-                $"{action.Substring(0, 1).ToUpper() + action.Substring(1)} сотрудника \"{SelectedUser.Name}\"?",
+            var result = ConfirmDialog.Show(
                 "Подтверждение",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                $"{action.Substring(0, 1).ToUpper() + action.Substring(1)} сотрудника \"{SelectedUser.Name}\"?",
+                ConfirmDialog.DialogType.Question,
+                "Да", "Нет");
 
-            if (result == MessageBoxResult.Yes)
+            if (result)
             {
                 var success = await _apiService.ToggleUserActiveAsync(SelectedUser.Id);
                 if (success)
@@ -170,17 +170,17 @@ namespace HQStudio.ViewModels
 
             if (SelectedUser.Login == "admin")
             {
-                MessageBox.Show("Нельзя удалить администратора", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ConfirmDialog.ShowInfo("Ошибка", "Нельзя удалить администратора", ConfirmDialog.DialogType.Warning);
                 return;
             }
 
-            var result = MessageBox.Show(
+            var result = ConfirmDialog.Show(
+                "Подтверждение удаления",
                 $"Удалить сотрудника \"{SelectedUser.Name}\"?\n\nУчётная запись будет деактивирована, но сохранена в базе.",
-                "Подтверждение",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                ConfirmDialog.DialogType.Warning,
+                "Удалить", "Отмена");
 
-            if (result == MessageBoxResult.Yes)
+            if (result)
             {
                 var success = await _apiService.DeleteUserAsync(SelectedUser.Id);
                 if (success)

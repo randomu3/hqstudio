@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using HQStudio.Views.Dialogs;
 
 namespace HQStudio.Utils
 {
@@ -102,7 +103,7 @@ namespace HQStudio.Utils
         /// </summary>
         public static void ShowValidationError(string message, TextBox? focusElement = null)
         {
-            MessageBox.Show(message, "Ошибка валидации", MessageBoxButton.OK, MessageBoxImage.Warning);
+            ConfirmDialog.ShowInfo("Ошибка валидации", message, ConfirmDialog.DialogType.Warning);
             focusElement?.Focus();
         }
     }

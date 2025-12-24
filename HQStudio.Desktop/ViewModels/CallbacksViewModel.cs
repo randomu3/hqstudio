@@ -119,8 +119,10 @@ namespace HQStudio.ViewModels
                 IsLoading = false;
                 if (_settings.UseApi)
                 {
-                    MessageBox.Show("Не удалось подключиться к API.\nПроверьте что сервер запущен на " + _settings.ApiUrl, 
-                        "Ошибка подключения", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ConfirmDialog.ShowInfo(
+                        "Нет подключения к API",
+                        $"Не удалось подключиться к серверу.\nПроверьте что сервер запущен на {_settings.ApiUrl}",
+                        ConfirmDialog.DialogType.Warning);
                 }
                 return;
             }
@@ -163,7 +165,7 @@ namespace HQStudio.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"LoadDataAsync error: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-                MessageBox.Show($"Ошибка загрузки: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                ConfirmDialog.ShowInfo("Ошибка загрузки", ex.Message, ConfirmDialog.DialogType.Error);
             }
 
             IsLoading = false;
@@ -237,13 +239,13 @@ namespace HQStudio.ViewModels
                     await _apiService.UpdateCallbackStatusAsync(SelectedCallback.Id, "Processing");
                     
                     // Спрашиваем о создании заказа
-                    var createOrder = MessageBox.Show(
-                        $"Заявка привязана к клиенту {dialog.LinkedClient.Name}.\n\nСоздать заказ для этого клиента?",
+                    var createOrder = ConfirmDialog.Show(
                         "Заявка привязана",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
+                        $"Заявка привязана к клиенту {dialog.LinkedClient.Name}.\n\nСоздать заказ для этого клиента?",
+                        ConfirmDialog.DialogType.Question,
+                        "Создать заказ", "Нет");
                     
-                    if (createOrder == MessageBoxResult.Yes)
+                    if (createOrder)
                     {
                         OpenOrderDialogForClient(clientForOrder);
                     }
@@ -419,13 +421,13 @@ namespace HQStudio.ViewModels
         {
             if (SelectedCallback == null) return;
 
-            var result = MessageBox.Show(
-                $"Удалить заявку #{SelectedCallback.Id} от {SelectedCallback.Name}?",
+            var result = ConfirmDialog.Show(
                 "Подтверждение удаления",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                $"Удалить заявку #{SelectedCallback.Id} от {SelectedCallback.Name}?",
+                ConfirmDialog.DialogType.Warning,
+                "Удалить", "Отмена");
 
-            if (result == MessageBoxResult.Yes)
+            if (result)
             {
                 var success = await _apiService.DeleteCallbackAsync(SelectedCallback.Id);
                 if (success)

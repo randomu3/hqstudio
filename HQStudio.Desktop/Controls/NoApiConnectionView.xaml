@@ -1,0 +1,16 @@
+<UserControl x:Class="HQStudio.Controls.NoApiConnectionView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <Border Style="{DynamicResource Card}" Padding="40">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="⚠️" FontSize="48" Foreground="{DynamicResource TextPrimaryBrush}" 
+                       HorizontalAlignment="Center" Margin="0,0,0,16"/>
+            <TextBlock Text="Нет подключения к API" FontSize="18" FontWeight="SemiBold" 
+                       Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="DescriptionText" 
+                       Style="{DynamicResource TextSmall}" HorizontalAlignment="Center" Margin="0,8,0,0"
+                       TextAlignment="Center"/>
+        </StackPanel>
+    </Border>
+</UserControl>

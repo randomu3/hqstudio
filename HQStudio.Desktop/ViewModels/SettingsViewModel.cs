@@ -1,6 +1,6 @@
 using HQStudio.Services;
+using HQStudio.Views.Dialogs;
 using System.Reflection;
-using System.Windows;
 using System.Windows.Input;
 
 namespace HQStudio.ViewModels
@@ -123,13 +123,13 @@ namespace HQStudio.ViewModels
 
         private async Task InstallUpdateAsync()
         {
-            var result = MessageBox.Show(
-                $"Установить обновление до версии {NewVersion}?\n\nПриложение будет перезапущено.",
+            var result = ConfirmDialog.Show(
                 "Установка обновления",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                $"Установить обновление до версии {NewVersion}?\n\nПриложение будет перезапущено.",
+                ConfirmDialog.DialogType.Question,
+                "Установить", "Отмена");
 
-            if (result == MessageBoxResult.Yes)
+            if (result)
             {
                 await _updateService.DownloadAndInstallAsync();
             }
@@ -137,16 +137,16 @@ namespace HQStudio.ViewModels
 
         private void ResetData()
         {
-            var result = MessageBox.Show(
-                "Сбросить все данные к демо-версии?\nВсе текущие данные будут удалены.",
+            var result = ConfirmDialog.Show(
                 "Сброс данных",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
+                "Сбросить все данные к демо-версии?\nВсе текущие данные будут удалены.",
+                ConfirmDialog.DialogType.Warning,
+                "Сбросить", "Отмена");
 
-            if (result == MessageBoxResult.Yes)
+            if (result)
             {
                 _dataService.ResetToDemo();
-                MessageBox.Show("Данные сброшены! Перезапустите приложение.", "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
+                ConfirmDialog.ShowInfo("Готово", "Данные сброшены! Перезапустите приложение.", ConfirmDialog.DialogType.Success);
             }
         }
 

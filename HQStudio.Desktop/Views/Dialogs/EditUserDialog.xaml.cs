@@ -42,21 +42,21 @@ namespace HQStudio.Views.Dialogs
         {
             if (string.IsNullOrWhiteSpace(DisplayNameBox.Text))
             {
-                MessageBox.Show("Введите имя сотрудника", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ConfirmDialog.ShowInfo("Ошибка", "Введите имя сотрудника", ConfirmDialog.DialogType.Warning);
                 DisplayNameBox.Focus();
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(UsernameBox.Text))
             {
-                MessageBox.Show("Введите логин", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ConfirmDialog.ShowInfo("Ошибка", "Введите логин", ConfirmDialog.DialogType.Warning);
                 UsernameBox.Focus();
                 return;
             }
 
             if (IsNew && string.IsNullOrWhiteSpace(PasswordBox.Password))
             {
-                MessageBox.Show("Введите пароль", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ConfirmDialog.ShowInfo("Ошибка", "Введите пароль", ConfirmDialog.DialogType.Warning);
                 PasswordBox.Focus();
                 return;
             }
