@@ -32,7 +32,7 @@ namespace HQStudio.Services
         /// </summary>
         public async Task<T?> GetOrFetchAsync<T>(
             string cacheKey, 
-            Func<Task<T>> fetchFunc, 
+            Func<Task<T?>> fetchFunc, 
             TimeSpan? cacheDuration = null,
             bool forceRefresh = false) where T : class
         {
