@@ -53,7 +53,16 @@ namespace HQStudio.ViewModels
             LogoutCommand = new RelayCommand(_ => Logout());
             RefreshCommand = new RelayCommand(_ => Refresh());
             ClearNotificationsCommand = new RelayCommand(_ => HasNewNotifications = false);
-            CurrentView = new DashboardViewModel();
+            
+            try
+            {
+                CurrentView = new DashboardViewModel();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"DashboardViewModel error: {ex}");
+                System.Windows.MessageBox.Show($"Ошибка загрузки Dashboard: {ex.Message}", "Ошибка");
+            }
         }
 
         private void Navigate(object? parameter)
@@ -61,18 +70,26 @@ namespace HQStudio.ViewModels
             if (parameter is not string viewName) return;
 
             CurrentViewName = viewName;
-            CurrentView = viewName switch
+            try
             {
-                "Dashboard" => new DashboardViewModel(),
-                "Services" => new ServicesViewModel(),
-                "Clients" => new ClientsViewModel(),
-                "Orders" => CreateOrdersViewModel(),
-                "Callbacks" => CreateCallbacksViewModel(),
-                "Staff" => new StaffViewModel(),
-                "ActivityLog" => new ActivityLogViewModel(),
-                "Settings" => new SettingsViewModel(),
-                _ => CurrentView
-            };
+                CurrentView = viewName switch
+                {
+                    "Dashboard" => new DashboardViewModel(),
+                    "Services" => new ServicesViewModel(),
+                    "Clients" => new ClientsViewModel(),
+                    "Orders" => CreateOrdersViewModel(),
+                    "Callbacks" => CreateCallbacksViewModel(),
+                    "Staff" => new StaffViewModel(),
+                    "ActivityLog" => new ActivityLogViewModel(),
+                    "Settings" => new SettingsViewModel(),
+                    _ => CurrentView
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Navigate error: {ex}");
+                System.Windows.MessageBox.Show($"Ошибка навигации: {ex.Message}", "Ошибка");
+            }
         }
 
         private OrdersViewModel CreateOrdersViewModel()

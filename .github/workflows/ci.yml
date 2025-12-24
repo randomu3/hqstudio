@@ -116,6 +116,40 @@ jobs:
       
       - name: Test
         run: dotnet test HQStudio.Desktop.Tests/HQStudio.Desktop.Tests.csproj --verbosity normal --filter "Category!=Integration"
+      
+      - name: Take Screenshots
+        shell: pwsh
+        env:
+          SCREENSHOT_MODE: "true"
+          SCREENSHOT_HIDDEN: "true"
+          SCREENSHOT_OUTPUT: "screenshots"
+        run: |
+          $exe = "HQStudio.Desktop/bin/Release/net8.0-windows/HQStudio.exe"
+          if (Test-Path $exe) {
+            Write-Host "Starting screenshot mode..."
+            $process = Start-Process -FilePath $exe -PassThru -NoNewWindow
+            $timeout = 60
+            $waited = 0
+            while (!$process.HasExited -and $waited -lt $timeout) {
+              Start-Sleep -Seconds 1
+              $waited++
+            }
+            if (!$process.HasExited) {
+              Write-Host "Timeout - killing process"
+              $process.Kill()
+            }
+            Write-Host "Screenshot process exited with code: $($process.ExitCode)"
+          } else {
+            Write-Host "Executable not found: $exe"
+          }
+      
+      - name: Upload Screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-screenshots
+          path: screenshots/
+          if-no-files-found: ignore
 
   # ===========================================
   # Docker Build Test

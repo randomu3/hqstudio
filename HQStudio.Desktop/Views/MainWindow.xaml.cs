@@ -9,40 +9,54 @@ namespace HQStudio.Views
     {
         public MainWindow()
         {
-            InitializeComponent();
-            InitializeNotifications();
+            try
+            {
+                InitializeComponent();
+                InitializeNotifications();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка инициализации MainWindow: {ex.Message}\n\n{ex.StackTrace}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void InitializeNotifications()
         {
-            // Запускаем polling для уведомлений
-            var notifications = NotificationService.Instance;
-            
-            notifications.OnNewCallback += (name, phone) =>
+            try
             {
-                Dispatcher.Invoke(() =>
+                // Запускаем polling для уведомлений
+                var notifications = NotificationService.Instance;
+                
+                notifications.OnNewCallback += (name, phone) =>
                 {
-                    // Можно добавить визуальный индикатор в UI
-                    if (DataContext is MainViewModel vm)
+                    Dispatcher.Invoke(() =>
                     {
-                        vm.HasNewNotifications = true;
-                    }
-                });
-            };
+                        if (DataContext is MainViewModel vm)
+                        {
+                            vm.HasNewNotifications = true;
+                        }
+                    });
+                };
 
-            notifications.OnNewOrder += (client, orderId) =>
+                notifications.OnNewOrder += (client, orderId) =>
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (DataContext is MainViewModel vm)
+                        {
+                            vm.HasNewNotifications = true;
+                        }
+                    });
+                };
+
+                // Запускаем polling (каждые 30 секунд)
+                notifications.StartPolling(30);
+            }
+            catch (Exception ex)
             {
-                Dispatcher.Invoke(() =>
-                {
-                    if (DataContext is MainViewModel vm)
-                    {
-                        vm.HasNewNotifications = true;
-                    }
-                });
-            };
-
-            // Запускаем polling (каждые 30 секунд)
-            notifications.StartPolling(30);
+                System.Diagnostics.Debug.WriteLine($"InitializeNotifications error: {ex.Message}");
+            }
         }
 
         protected override void OnClosed(EventArgs e)

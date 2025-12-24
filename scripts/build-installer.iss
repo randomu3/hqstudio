@@ -44,7 +44,7 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 
 [Files]
 ; Основной исполняемый файл (single-file publish)
-Source: "..\HQStudio.Desktop\bin\Release\net8.0-windows10.0.19041.0\win-x64\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\publish\HQStudio.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Конфигурация (если есть)
 Source: "..\HQStudio.Desktop\appsettings.example.json"; DestDir: "{app}"; DestName: "appsettings.json"; Flags: onlyifdoesntexist

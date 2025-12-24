@@ -1,14 +1,13 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using Windows.UI.Notifications;
-using Microsoft.Toolkit.Uwp.Notifications;
 
 namespace HQStudio.Services
 {
     /// <summary>
-    /// Сервис Windows Toast уведомлений
+    /// Сервис уведомлений о новых заявках и заказах
     /// </summary>
     public class NotificationService
     {
@@ -22,7 +21,6 @@ namespace HQStudio.Services
 
         public event Action<string, string>? OnNewCallback;
         public event Action<string, string>? OnNewOrder;
-        public event Action<int, string>? OnOrderStatusChanged;
 
         private NotificationService() { }
 
@@ -98,8 +96,17 @@ namespace HQStudio.Services
                 var newCallbacks = callbacks.Where(c => c.Id > _lastCallbackId).ToList();
                 foreach (var callback in newCallbacks)
                 {
-                    ShowNewCallbackNotification(callback.Name, callback.Phone);
                     OnNewCallback?.Invoke(callback.Name, callback.Phone);
+                    
+                    // Показываем MessageBox в UI потоке
+                    Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        MessageBox.Show(
+                            $"Новая заявка от {callback.Name}\nТелефон: {callback.Phone}",
+                            "📞 Новая заявка",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    });
                 }
 
                 if (newCallbacks.Any())
@@ -118,96 +125,21 @@ namespace HQStudio.Services
                 var newOrders = ordersResponse.Items.Where(o => o.Id > _lastOrderId).ToList();
                 foreach (var order in newOrders)
                 {
-                    ShowNewOrderNotification(order.Id, order.Client?.Name ?? "Клиент");
                     OnNewOrder?.Invoke(order.Client?.Name ?? "Новый заказ", $"#{order.Id}");
+                    
+                    // Показываем MessageBox в UI потоке
+                    Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        MessageBox.Show(
+                            $"Новый заказ #{order.Id}\nКлиент: {order.Client?.Name ?? "—"}",
+                            "📋 Новый заказ",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    });
                 }
 
                 if (newOrders.Any())
                     _lastOrderId = newOrders.Max(o => o.Id);
-            }
-            catch { }
-        }
-
-        /// <summary>
-        /// Показать уведомление о новой заявке
-        /// </summary>
-        public void ShowNewCallbackNotification(string clientName, string phone)
-        {
-            ShowToast(
-                "📞 Новая заявка",
-                $"{clientName}\n{phone}",
-                "callback"
-            );
-        }
-
-        /// <summary>
-        /// Показать уведомление о новом заказе
-        /// </summary>
-        public void ShowNewOrderNotification(int orderId, string clientName)
-        {
-            ShowToast(
-                "📋 Новый заказ",
-                $"#{orderId} - {clientName}",
-                "order"
-            );
-        }
-
-        /// <summary>
-        /// Показать уведомление об изменении статуса
-        /// </summary>
-        public void ShowStatusChangeNotification(int orderId, string newStatus)
-        {
-            var emoji = newStatus switch
-            {
-                "В работе" => "🔧",
-                "Завершен" => "✅",
-                "Отменен" => "❌",
-                _ => "📋"
-            };
-
-            ShowToast(
-                $"{emoji} Заказ #{orderId}",
-                $"Статус: {newStatus}",
-                "status"
-            );
-        }
-
-        /// <summary>
-        /// Показать произвольное уведомление
-        /// </summary>
-        public void ShowToast(string title, string message, string tag = "general")
-        {
-            try
-            {
-                new ToastContentBuilder()
-                    .AddText(title)
-                    .AddText(message)
-                    .SetToastScenario(ToastScenario.Default)
-                    .Show(toast =>
-                    {
-                        toast.Tag = tag;
-                        toast.Group = "HQStudio";
-                    });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Toast error: {ex.Message}");
-                // Fallback - показать в UI
-                Application.Current?.Dispatcher?.Invoke(() =>
-                {
-                    // Можно показать внутреннее уведомление
-                });
-            }
-        }
-
-        /// <summary>
-        /// Очистить все уведомления
-        /// </summary>
-        public void ClearAllNotifications()
-        {
-            try
-            {
-                ToastNotificationManagerCompat.History.Clear();
             }
             catch { }
         }

@@ -82,9 +82,17 @@ namespace HQStudio.Views
             await Task.Delay(400);
 
             // Open login window
-            var loginWindow = new LoginWindow();
-            loginWindow.Show();
-            Close();
+            try
+            {
+                var loginWindow = new LoginWindow();
+                loginWindow.Show();
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка открытия окна входа: {ex.Message}\n\n{ex.StackTrace}", 
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

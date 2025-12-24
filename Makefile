@@ -33,13 +33,15 @@ install: ## Установить все зависимости
 # ===========================================
 
 dev-api: ## Запустить API (development)
-	cd HQStudio.API && dotnet run
+	dotnet run --project HQStudio.API/HQStudio.API.csproj
 
 dev-web: ## Запустить Web (development)
 	cd HQStudio.Web && npm run dev
 
-dev-desktop: ## Запустить Desktop (development)
-	cd HQStudio.Desktop && dotnet run
+dev-desktop: ## Собрать и показать путь к Desktop
+	dotnet build HQStudio.Desktop/HQStudio.csproj -c Debug -v q
+	@echo ""
+	@echo "Запустите вручную: HQStudio.Desktop/bin/Debug/net8.0-windows/HQStudio.exe"
 
 # ===========================================
 # Сборка
@@ -130,14 +132,14 @@ release-dry: ## Dry-run релиза
 commit: ## Интерактивный коммит (Commitizen)
 	npm run commit
 
-publish-desktop: ## Собрать Desktop для распространения
-	@echo "$(CYAN)Публикация Desktop...$(RESET)"
-	powershell -ExecutionPolicy Bypass -File scripts/publish-desktop.ps1 -CreateZip
-	@echo "$(GREEN)✓ Desktop опубликован в dist/$(RESET)"
+build-release: ## Собрать релиз (ZIP архив)
+	@echo "$(CYAN)Сборка релиза...$(RESET)"
+	powershell -ExecutionPolicy Bypass -File scripts/build-release.ps1
+	@echo "$(GREEN)✓ Релиз собран в dist/$(RESET)"
 
-publish-installer: ## Создать инсталлятор Desktop (требует Inno Setup)
-	@echo "$(CYAN)Создание инсталлятора...$(RESET)"
-	powershell -ExecutionPolicy Bypass -File scripts/publish-desktop.ps1 -CreateInstaller
+build-installer: ## Собрать инсталлятор (требует Inno Setup)
+	@echo "$(CYAN)Сборка инсталлятора...$(RESET)"
+	powershell -ExecutionPolicy Bypass -File scripts/build-release.ps1 -Installer
 	@echo "$(GREEN)✓ Инсталлятор создан в dist/$(RESET)"
 
 # ===========================================

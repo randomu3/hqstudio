@@ -64,7 +64,6 @@ namespace HQStudio.ViewModels
             set => SetProperty(ref _isApiConnected, value);
         }
 
-        // Графики
         public ISeries[] RevenueSeries
         {
             get => _revenueSeries;
@@ -118,8 +117,7 @@ namespace HQStudio.ViewModels
                         });
                     }
                     
-                    // Lazy load графиков после основных данных
-                    _ = Task.Run(() => System.Windows.Application.Current?.Dispatcher?.Invoke(LoadRevenueChart));
+                    LoadRevenueChart();
                     return;
                 }
             }
@@ -137,10 +135,7 @@ namespace HQStudio.ViewModels
             }
 
             LoadServiceStatistics();
-            
-            // Lazy load графиков - отложенная загрузка для быстрого старта UI
-            _ = Task.Delay(100).ContinueWith(_ => 
-                System.Windows.Application.Current?.Dispatcher?.Invoke(LoadRevenueChart));
+            LoadRevenueChart();
         }
 
         private void LoadServiceStatistics()
@@ -168,49 +163,67 @@ namespace HQStudio.ViewModels
 
         private void LoadRevenueChart()
         {
-            // Данные за последние 7 дней
-            var days = Enumerable.Range(0, 7)
-                .Select(i => DateTime.Today.AddDays(-6 + i))
-                .ToList();
-
-            var labels = days.Select(d => d.ToString("dd.MM")).ToArray();
-            var values = days.Select(d =>
+            try
             {
-                return (double)_dataService.Orders
-                    .Where(o => o.CreatedAt.Date == d && o.Status == "Завершен")
-                    .Sum(o => o.TotalPrice);
-            }).ToArray();
+                var days = Enumerable.Range(0, 7)
+                    .Select(i => DateTime.Today.AddDays(-6 + i))
+                    .ToList();
 
-            RevenueSeries = new ISeries[]
-            {
-                new ColumnSeries<double>
+                var labels = days.Select(d => d.ToString("dd.MM")).ToArray();
+                var hasRealData = _dataService.Orders.Any();
+                
+                var values = days.Select(d =>
                 {
-                    Values = values,
-                    Fill = new SolidColorPaint(new SKColor(76, 175, 80)), // Green
-                    Stroke = null,
-                    MaxBarWidth = 30
-                }
-            };
+                    var dayRevenue = (double)_dataService.Orders
+                        .Where(o => o.CreatedAt.Date == d && o.Status == "Завершен")
+                        .Sum(o => o.TotalPrice);
+                    
+                    // Если нет реальных данных, показываем демо-значения
+                    if (!hasRealData)
+                    {
+                        var random = new Random(d.DayOfYear);
+                        return random.Next(8000, 35000);
+                    }
+                    
+                    return dayRevenue;
+                }).ToArray();
 
-            RevenueXAxes = new Axis[]
-            {
-                new Axis
+                RevenueSeries = new ISeries[]
                 {
-                    Labels = labels,
-                    LabelsPaint = new SolidColorPaint(new SKColor(150, 150, 150)),
-                    TextSize = 11
-                }
-            };
+                    new ColumnSeries<double>
+                    {
+                        Values = values,
+                        Fill = new SolidColorPaint(new SKColor(76, 175, 80)),
+                        Stroke = null,
+                        MaxBarWidth = 30
+                    }
+                };
 
-            RevenueYAxes = new Axis[]
-            {
-                new Axis
+                RevenueXAxes = new Axis[]
                 {
-                    LabelsPaint = new SolidColorPaint(new SKColor(150, 150, 150)),
-                    TextSize = 11,
-                    Labeler = value => $"{value:N0} ₽"
-                }
-            };
+                    new Axis
+                    {
+                        Labels = labels,
+                        LabelsPaint = new SolidColorPaint(new SKColor(150, 150, 150)),
+                        TextSize = 11
+                    }
+                };
+
+                RevenueYAxes = new Axis[]
+                {
+                    new Axis
+                    {
+                        LabelsPaint = new SolidColorPaint(new SKColor(150, 150, 150)),
+                        TextSize = 11,
+                        Labeler = value => $"{value:N0} ₽",
+                        MinLimit = 0
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"LoadRevenueChart error: {ex.Message}");
+            }
         }
 
         private void GenerateWeeklyReport()

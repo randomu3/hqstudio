@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
@@ -15,24 +15,16 @@
     <Product>HQ Studio Desktop</Product>
     <Description>CRM система для автотюнинг студии</Description>
     <Copyright>© $([System.DateTime]::Now.Year) HQ Studio. Все права защищены.</Copyright>
-    
-    <!-- Оптимизации для быстрого запуска -->
+  </PropertyGroup>
+
+  <!-- Настройки только для публикации (dotnet publish) -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
     <PublishReadyToRun>true</PublishReadyToRun>
-    <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    
-    <!-- Trimming (осторожно с WPF) -->
-    <PublishTrimmed>false</PublishTrimmed>
-    
-    <!-- Tiered compilation для быстрого старта -->
-    <TieredCompilation>true</TieredCompilation>
-    <TieredCompilationQuickJit>true</TieredCompilationQuickJit>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
     <!-- Графики -->

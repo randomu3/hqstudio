@@ -1,32 +1,73 @@
 ﻿using HQStudio.Services;
 using HQStudio.Views;
+using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace HQStudio
 {
     public partial class App : Application
     {
+        private static readonly string LogFile = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "HQStudio", "crash.log");
+
         protected override void OnStartup(StartupEventArgs e)
         {
-            base.OnStartup(e);
-            
-            // Initialize theme
-            ThemeService.Instance.Initialize();
-            
-            // Screenshot mode - пропускаем авторизацию и делаем скриншоты
-            if (ScreenshotService.IsScreenshotMode)
+            try
             {
-                _ = RunScreenshotModeAsync();
-                return;
+                // Создаём папку для логов
+                Directory.CreateDirectory(Path.GetDirectoryName(LogFile)!);
+                Log("=== App Starting ===");
+                Log($"Args: {string.Join(" ", e.Args)}");
+                Log($"WorkingDir: {Environment.CurrentDirectory}");
+                
+                base.OnStartup(e);
+                
+                // Глобальный обработчик ошибок
+                DispatcherUnhandledException += App_DispatcherUnhandledException;
+                AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+                TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+                
+                Log("Initializing theme...");
+                // Initialize theme
+                ThemeService.Instance.Initialize();
+                Log("Theme initialized");
+                
+                // Screenshot mode - пропускаем авторизацию и делаем скриншоты
+                Log($"Screenshot mode: {ScreenshotService.IsScreenshotMode}");
+                if (ScreenshotService.IsScreenshotMode)
+                {
+                    _ = RunScreenshotModeAsync();
+                    return;
+                }
+                
+                // Start data sync service if API is enabled
+                Log($"UseApi: {SettingsService.Instance.UseApi}");
+                if (SettingsService.Instance.UseApi)
+                {
+                    Log("Starting API init...");
+                    _ = InitializeApiAsync();
+                }
+                
+                Log("Startup complete");
             }
-            
-            // Start data sync service if API is enabled
-            if (SettingsService.Instance.UseApi)
+            catch (Exception ex)
             {
-                _ = InitializeApiAsync();
+                Log($"STARTUP ERROR: {ex}");
+                throw;
             }
             
             // Session is started after login in LoginViewModel
+        }
+
+        private static void Log(string message)
+        {
+            try
+            {
+                File.AppendAllText(LogFile, $"[{DateTime.Now:HH:mm:ss.fff}] {message}\n");
+            }
+            catch { }
         }
 
         private async Task InitializeApiAsync()
@@ -96,6 +137,29 @@ namespace HQStudio
             // End session when app closes
             SessionService.Instance.EndSessionAsync().Wait();
             base.OnExit(e);
+        }
+
+        private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            Log($"UI Exception: {e.Exception}");
+            System.Diagnostics.Debug.WriteLine($"UI Exception: {e.Exception}");
+            MessageBox.Show($"Произошла ошибка: {e.Exception.Message}", "Ошибка", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            e.Handled = true;
+        }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            var ex = e.ExceptionObject as Exception;
+            Log($"Domain Exception: {ex}");
+            System.Diagnostics.Debug.WriteLine($"Domain Exception: {ex}");
+        }
+
+        private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            Log($"Task Exception: {e.Exception}");
+            System.Diagnostics.Debug.WriteLine($"Task Exception: {e.Exception}");
+            e.SetObserved();
         }
     }
 }
