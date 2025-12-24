@@ -15,7 +15,7 @@ namespace HQStudio.ViewModels
         
         private StaffItem? _selectedUser;
         private bool _isLoading;
-        private bool _isApiConnected = true;
+        private bool _isApiConnected;
 
         public ObservableCollection<StaffItem> Users { get; } = new();
 
@@ -44,6 +44,7 @@ namespace HQStudio.ViewModels
         public ICommand EditUserCommand { get; }
         public ICommand ToggleActiveCommand { get; }
         public ICommand DeleteUserCommand { get; }
+        public ICommand ResetPasswordCommand { get; }
 
         public StaffViewModel()
         {
@@ -52,6 +53,7 @@ namespace HQStudio.ViewModels
             EditUserCommand = new RelayCommand(async _ => await EditUserAsync(), _ => SelectedUser != null);
             ToggleActiveCommand = new RelayCommand(async _ => await ToggleActiveAsync(), _ => SelectedUser != null);
             DeleteUserCommand = new RelayCommand(async _ => await DeleteUserAsync(), _ => SelectedUser != null);
+            ResetPasswordCommand = new RelayCommand(async _ => await ResetPasswordAsync(), _ => SelectedUser != null);
             
             _ = LoadUsersAsync();
         }
@@ -146,7 +148,11 @@ namespace HQStudio.ViewModels
 
         private async Task EditUserAsync()
         {
-            if (SelectedUser == null) return;
+            if (SelectedUser == null)
+            {
+                ConfirmDialog.ShowInfo("Внимание", "Сначала выберите сотрудника из списка", ConfirmDialog.DialogType.Warning);
+                return;
+            }
 
             var dialog = new EditUserDialog(SelectedUser);
             dialog.Owner = Application.Current.MainWindow;
@@ -175,7 +181,11 @@ namespace HQStudio.ViewModels
 
         private async Task ToggleActiveAsync()
         {
-            if (SelectedUser == null) return;
+            if (SelectedUser == null)
+            {
+                ConfirmDialog.ShowInfo("Внимание", "Сначала выберите сотрудника из списка", ConfirmDialog.DialogType.Warning);
+                return;
+            }
 
             if (SelectedUser.Login == "admin")
             {
@@ -203,7 +213,11 @@ namespace HQStudio.ViewModels
 
         private async Task DeleteUserAsync()
         {
-            if (SelectedUser == null) return;
+            if (SelectedUser == null)
+            {
+                ConfirmDialog.ShowInfo("Внимание", "Сначала выберите сотрудника из списка", ConfirmDialog.DialogType.Warning);
+                return;
+            }
 
             if (SelectedUser.Login == "admin")
             {
@@ -224,6 +238,72 @@ namespace HQStudio.ViewModels
                 {
                     _cache.Invalidate(CacheKey);
                     await LoadUsersAsync(forceRefresh: true);
+                }
+            }
+        }
+
+        private async Task ResetPasswordAsync()
+        {
+            if (SelectedUser == null)
+            {
+                ConfirmDialog.ShowInfo("Внимание", "Сначала выберите сотрудника из списка", ConfirmDialog.DialogType.Warning);
+                return;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[ResetPassword] SelectedUser: ID={SelectedUser.Id}, Login={SelectedUser.Login}, Name={SelectedUser.Name}");
+
+            // Проверяем, сбрасывает ли пользователь свой собственный пароль
+            var currentUser = _apiService.CurrentUser;
+            System.Diagnostics.Debug.WriteLine($"[ResetPassword] CurrentUser: {(currentUser != null ? $"ID={currentUser.Id}, Login={currentUser.Login}" : "null")}");
+            
+            var isResettingOwnPassword = currentUser != null && currentUser.Id == SelectedUser.Id;
+
+            var message = isResettingOwnPassword
+                ? $"Вы собираетесь сбросить СВОЙ пароль!\n\nПосле сброса вы будете автоматически выведены из системы.\nНовый пароль будет равен логину ({SelectedUser.Login})."
+                : $"Сбросить пароль для \"{SelectedUser.Name}\"?\n\nНовый пароль будет равен логину ({SelectedUser.Login}).\nПри следующем входе пользователь должен будет задать новый пароль.";
+
+            var result = ConfirmDialog.Show(
+                "Сброс пароля",
+                message,
+                isResettingOwnPassword ? ConfirmDialog.DialogType.Warning : ConfirmDialog.DialogType.Question,
+                "Сбросить", "Отмена");
+
+            if (result)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ResetPassword] Calling API with ID={SelectedUser.Id}");
+                var (success, error) = await _apiService.ResetUserPasswordAsync(SelectedUser.Id);
+                System.Diagnostics.Debug.WriteLine($"[ResetPassword] Result: success={success}, error={error}");
+                
+                if (success)
+                {
+                    _cache.Invalidate(CacheKey);
+                    
+                    if (isResettingOwnPassword)
+                    {
+                        // Выходим из системы и показываем окно логина
+                        ConfirmDialog.ShowInfo("Пароль сброшен", 
+                            $"Ваш пароль сброшен.\nНовый пароль: {SelectedUser.Login}\n\nВы будете перенаправлены на экран входа.", 
+                            ConfirmDialog.DialogType.Success);
+                        
+                        // Очищаем токен и выходим
+                        _apiService.ClearToken();
+                        
+                        // Открываем окно логина
+                        var loginWindow = new Views.LoginWindow();
+                        loginWindow.Show();
+                        
+                        // Закрываем главное окно
+                        Application.Current.MainWindow?.Close();
+                    }
+                    else
+                    {
+                        ConfirmDialog.ShowInfo("Успех", $"Пароль сброшен.\nНовый пароль: {SelectedUser.Login}", ConfirmDialog.DialogType.Success);
+                    }
+                }
+                else
+                {
+                    var errorMsg = string.IsNullOrEmpty(error) ? "Не удалось сбросить пароль" : error;
+                    ConfirmDialog.ShowInfo("Ошибка", errorMsg, ConfirmDialog.DialogType.Warning);
                 }
             }
         }

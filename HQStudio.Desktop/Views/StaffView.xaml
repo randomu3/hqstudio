@@ -41,6 +41,8 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="🔑 Сбросить пароль" Style="{DynamicResource BtnSecondary}" Margin="0,0,12,0"
+                        Command="{Binding ResetPasswordCommand}" ToolTip="Сбросить пароль выбранного сотрудника"/>
                 <Button Content="⏸️ Деактивировать" Style="{DynamicResource BtnSecondary}" Margin="0,0,12,0"
                         Command="{Binding ToggleActiveCommand}"/>
                 <Button Content="🗑️ Удалить" Style="{DynamicResource BtnDanger}" Margin="0,0,12,0"
@@ -73,8 +75,8 @@
         <controls:NoApiConnectionView Grid.Row="2" SectionName="Сотрудники"
                                       Visibility="{Binding IsApiConnected, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
 
-        <!-- Staff Grid -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <!-- Staff List -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,16,0,0">
             <ScrollViewer.Style>
                 <Style TargetType="ScrollViewer">
                     <Setter Property="Visibility" Value="Visible"/>
@@ -89,65 +91,71 @@
                 </Style>
             </ScrollViewer.Style>
             <ItemsControl ItemsSource="{Binding Users}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{DynamicResource CardHoverable}" Margin="0,0,16,16" Width="280"
+                        <Border Style="{DynamicResource ListRowCard}"
                                 MouseLeftButtonDown="User_MouseLeftButtonDown"
+                                Cursor="Hand"
                                 Opacity="{Binding IsActive, Converter={StaticResource BoolToOpacityConverter}}">
                             <Grid>
-                                <!-- Online indicator -->
-                                <Ellipse Width="12" Height="12" HorizontalAlignment="Right" 
-                                         VerticalAlignment="Top" Margin="0,-4,-4,0"
-                                         Fill="{Binding StatusColor}"/>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                                <StackPanel>
-                                    <Border Width="72" Height="72" CornerRadius="36" Background="{DynamicResource BgIconBrush}" 
-                                            Margin="0,0,0,16" HorizontalAlignment="Center">
-                                        <TextBlock Text="👤" FontSize="30" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
+                                <!-- Selection Indicator -->
+                                <Border x:Name="SelectionIndicator" Grid.Column="0" Width="4" CornerRadius="2" Margin="0,4,12,4"
+                                        VerticalAlignment="Stretch" Background="Transparent"/>
 
-                                    <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" 
-                                               Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,4"/>
-                                    <TextBlock Text="{Binding Login, StringFormat=@{0}}" 
-                                               Style="{DynamicResource TextSmall}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                <!-- Avatar -->
+                                <Border Grid.Column="1" Style="{DynamicResource ListRowIcon}">
+                                    <TextBlock Text="👤" FontSize="24" Foreground="{DynamicResource TextPrimaryBrush}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
 
-                                    <!-- Role Badge -->
-                                    <Border HorizontalAlignment="Center" CornerRadius="6" Padding="12,6" Margin="0,0,0,12">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="Background" Value="#2A2A2A"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Role}" Value="Admin">
-                                                        <Setter Property="Background" Value="#2A2A1A"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <TextBlock Text="{Binding RoleDisplay}" FontSize="11" FontWeight="Medium">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="#909090"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Role}" Value="Admin">
-                                                            <Setter Property="Foreground" Value="#FFC107"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </Border>
-
-                                    <!-- Status -->
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Ellipse Width="8" Height="8" Margin="0,0,8,0" Fill="{Binding StatusColor}"/>
+                                <!-- Info -->
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" 
+                                               Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Login, StringFormat=@{0}}" Style="{DynamicResource TextSmall}" Margin="0,0,16,0"/>
+                                        <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center" Fill="{Binding StatusColor}"/>
                                         <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="{Binding StatusColor}"/>
                                     </StackPanel>
                                 </StackPanel>
+
+                                <!-- Role Badge -->
+                                <Border Grid.Column="3" CornerRadius="6" Padding="12,6" Margin="0,0,16,0" VerticalAlignment="Center">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#2A2A2A"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Role}" Value="Admin">
+                                                    <Setter Property="Background" Value="#2A2A1A"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding RoleDisplay}" FontSize="11" FontWeight="Medium">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="#909090"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Role}" Value="Admin">
+                                                        <Setter Property="Foreground" Value="#FFC107"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Border>
+
+                                <!-- Created Date -->
+                                <TextBlock Grid.Column="4" Text="{Binding CreatedAt, StringFormat=dd.MM.yyyy}" 
+                                           Style="{DynamicResource TextSmall}" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
                     </DataTemplate>
