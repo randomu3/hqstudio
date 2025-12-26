@@ -114,7 +114,7 @@ namespace HQStudio.ViewModels
             NavigateToClientsCommand = new RelayCommand(_ => NavigateToSection?.Invoke("Clients"));
             NavigateToOrdersCommand = new RelayCommand(_ => NavigateToSection?.Invoke("Orders"));
             NavigateToActiveOrdersCommand = new RelayCommand(_ => NavigateToSection?.Invoke("ActiveOrders"));
-            NavigateToRevenueCommand = new RelayCommand(_ => NavigateToSection?.Invoke("Orders"));
+            NavigateToRevenueCommand = new RelayCommand(_ => NavigateToSection?.Invoke("Analytics"));
             LoadData();
         }
 

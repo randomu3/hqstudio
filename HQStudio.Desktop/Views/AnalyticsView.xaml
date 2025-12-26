@@ -1,0 +1,181 @@
+<UserControl x:Class="HQStudio.Views.AnalyticsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF">
+    
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            
+            <!-- Header -->
+            <Grid Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="📊 АНАЛИТИКА" Style="{DynamicResource TextLabel}"/>
+                    <TextBlock Text="Статистика и графики по выручке и заказам" 
+                               Style="{DynamicResource TextSmall}" Margin="0,4,0,0"/>
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <ComboBox ItemsSource="{Binding Periods}" 
+                              SelectedItem="{Binding SelectedPeriod}"
+                              Style="{DynamicResource ComboBoxStyle}"
+                              Width="120" Margin="0,0,12,0"/>
+                    <Button Content="🔄 Обновить" Style="{DynamicResource ButtonSecondary}" 
+                            Command="{Binding RefreshCommand}" Padding="12,8" Margin="0,0,8,0"/>
+                    <Button Content="📄 Отчёт" Style="{DynamicResource ButtonPrimary}" 
+                            Command="{Binding GenerateReportCommand}" Padding="12,8"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Stats Cards -->
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{DynamicResource Card}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="💰 ВЫРУЧКА" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                        <TextBlock FontSize="32" FontWeight="Bold" Foreground="#4CAF50">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0:N0} ₽">
+                                    <Binding Path="TotalRevenue"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="{Binding RevenueGrowth, StringFormat={}{0:+0.0;-0.0;0}%}" 
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{Binding RevenueGrowth, Converter={StaticResource GrowthToColor}}"/>
+                            <TextBlock Text=" к пред. периоду" Style="{DynamicResource TextSmall}" 
+                                       VerticalAlignment="Center" Margin="4,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{DynamicResource Card}" Margin="6,0">
+                    <StackPanel>
+                        <TextBlock Text="📋 ЗАКАЗОВ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                        <TextBlock Text="{Binding TotalOrdersInPeriod}" 
+                                   FontSize="32" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <TextBlock Style="{DynamicResource TextSmall}" Margin="0,8,0,0">
+                            <Run Text="Завершено: "/>
+                            <Run Text="{Binding CompletedOrdersInPeriod}" FontWeight="SemiBold" Foreground="#4CAF50"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{DynamicResource Card}" Margin="6,0">
+                    <StackPanel>
+                        <TextBlock Text="📈 СРЕДНИЙ ЧЕК" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                        <TextBlock FontSize="32" FontWeight="Bold" Foreground="#2196F3">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0:N0} ₽">
+                                    <Binding Path="AverageOrderValue"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Text="за завершённый заказ" Style="{DynamicResource TextSmall}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="3" Style="{DynamicResource Card}" Margin="12,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="✅ КОНВЕРСИЯ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
+                        <TextBlock FontSize="32" FontWeight="Bold" Foreground="#9C27B0">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource PercentageConverter}" StringFormat="{}{0}%">
+                                    <Binding Path="CompletedOrdersInPeriod"/>
+                                    <Binding Path="TotalOrdersInPeriod"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Text="завершённых заказов" Style="{DynamicResource TextSmall}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Revenue Chart -->
+            <TextBlock Text="📈 ДИНАМИКА ВЫРУЧКИ" Style="{DynamicResource TextLabel}" Margin="0,0,0,16"/>
+            <Border Style="{DynamicResource Card}" Margin="0,0,0,24" Height="280">
+                <lvc:CartesianChart 
+                    Series="{Binding RevenueSeries}"
+                    XAxes="{Binding RevenueXAxes}"
+                    YAxes="{Binding RevenueYAxes}"
+                    TooltipPosition="Top"
+                    ZoomMode="None"/>
+            </Border>
+
+            <!-- Orders Chart & Pie Chart -->
+            <Grid Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="350"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Orders Chart -->
+                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                    <TextBlock Text="📊 ЗАКАЗЫ ПО ПЕРИОДАМ" Style="{DynamicResource TextLabel}" Margin="0,0,0,16"/>
+                    <Border Style="{DynamicResource Card}" Height="280">
+                        <lvc:CartesianChart 
+                            Series="{Binding OrdersSeries}"
+                            XAxes="{Binding OrdersXAxes}"
+                            YAxes="{Binding OrdersYAxes}"
+                            TooltipPosition="Top"
+                            ZoomMode="None"
+                            LegendPosition="Bottom"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Services Pie Chart -->
+                <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                    <TextBlock Text="🔧 УСЛУГИ ПО ВЫРУЧКЕ" Style="{DynamicResource TextLabel}" Margin="0,0,0,16"/>
+                    <Border Style="{DynamicResource Card}" Height="280">
+                        <lvc:PieChart 
+                            Series="{Binding ServicesPieSeries}"
+                            LegendPosition="Right"/>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <!-- Top Services Table -->
+            <TextBlock Text="🏆 ТОП УСЛУГ ПО ВЫРУЧКЕ" Style="{DynamicResource TextLabel}" Margin="0,0,0,16"/>
+            <Border Style="{DynamicResource Card}">
+                <ItemsControl ItemsSource="{Binding TopServices}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="120"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBlock Grid.Column="0" Text="{Binding Service.Icon}" FontSize="20" 
+                                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Service.Name}" FontSize="14" 
+                                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <Border Grid.Column="2" Background="{DynamicResource BgHoverBrush}" 
+                                        CornerRadius="6" Padding="10,4" Margin="8,0">
+                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
+                                        <Run Text="{Binding OrderCount}"/>
+                                        <Run Text="заказов"/>
+                                    </TextBlock>
+                                </Border>
+                                <TextBlock Grid.Column="3" FontSize="16" FontWeight="SemiBold" 
+                                           Foreground="#4CAF50" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <Run Text="{Binding TotalRevenue, StringFormat={}{0:N0}}"/>
+                                    <Run Text="₽"/>
+                                </TextBlock>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+            
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

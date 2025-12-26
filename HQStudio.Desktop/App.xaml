@@ -23,6 +23,8 @@
             <converters:GreaterThanOneToVisibilityConverter x:Key="GreaterThanOneToVisibility"/>
             <converters:EqualityConverter x:Key="EqualityConverter"/>
             <converters:StringToVisibilityConverter x:Key="StringToVisibility"/>
+            <converters:GrowthToColorConverter x:Key="GrowthToColor"/>
+            <converters:PercentageConverter x:Key="PercentageConverter"/>
             
             <!-- Dynamic Theme Brushes -->
             <SolidColorBrush x:Key="BgPrimaryBrush" Color="#0A0A0A"/>

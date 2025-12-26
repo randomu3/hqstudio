@@ -77,6 +77,7 @@ namespace HQStudio.ViewModels
                 CurrentView = viewName switch
                 {
                     "Dashboard" => CreateDashboardViewModel(),
+                    "Analytics" => new AnalyticsViewModel(),
                     "Services" => new ServicesViewModel(),
                     "Clients" => new ClientsViewModel(),
                     "Orders" => CreateOrdersViewModel(),
