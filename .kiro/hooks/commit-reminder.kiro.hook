@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Напоминание о коммите",
+  "description": "После завершения работы агента напоминает о правильном формате коммита",
+  "version": "1",
+  "when": {
+    "type": "agentDone"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Если были внесены изменения в код, напомни пользователю сделать коммит через `make commit` или `npm run commit` с правильным форматом Conventional Commits на русском языке. Формат: `тип(область): описание`. Типы: feat, fix, docs, refactor, test, chore. Области: api, web, desktop, tests, docker, ci."
+  }
+}

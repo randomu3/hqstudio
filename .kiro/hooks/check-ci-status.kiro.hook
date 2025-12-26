@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Проверить CI",
+  "description": "Запускает команду gh run list --limit 5 для проверки статуса последних GitHub Actions workflows",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Выполни команду `gh run list --limit 5` и покажи мне статус последних GitHub Actions workflows. Проанализируй результаты и сообщи, есть ли проблемы с CI."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Напоминание о миграции БД",
+  "description": "При сохранении файла в папке HQStudio.API/Models отправляет напоминание проверить необходимость миграции базы данных",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "HQStudio.API/Models/*.cs"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Модель изменена. Проверь нужна ли миграция базы данных"
+  }
+}

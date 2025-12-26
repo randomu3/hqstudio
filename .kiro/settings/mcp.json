@@ -13,7 +13,8 @@
       "autoApprove": [
         "list_commits",
         "list_issues",
-        "get_file_contents"
+        "get_file_contents",
+        "search_repositories"
       ]
     },
     "postgres": {
@@ -48,7 +49,8 @@
         "list_containers",
         "list_images",
         "start_container",
-        "stop_container"
+        "stop_container",
+        "fetch_container_logs"
       ]
     },
     "filesystem": {
@@ -73,7 +75,10 @@
       "disabled": false,
       "autoApprove": [
         "puppeteer_navigate",
-        "puppeteer_screenshot"
+        "puppeteer_screenshot",
+        "puppeteer_evaluate",
+        "puppeteer_fill",
+        "puppeteer_click"
       ]
     },
     "memory": {

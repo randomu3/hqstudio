@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Линтинг Web компонентов",
+  "description": "При сохранении TSX файлов в HQStudio.Web запускает ESLint для проверки кода",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "HQStudio.Web/**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Запусти команду `npm run lint --prefix HQStudio.Web` и покажи результат. Если есть ошибки линтинга, предложи исправления."
+  }
+}

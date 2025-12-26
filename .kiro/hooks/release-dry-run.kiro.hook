@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Dry-run релиза",
+  "description": "Показывает, какая версия будет выпущена и какие изменения попадут в CHANGELOG",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Запусти команду `npm run release:dry` и проанализируй результат. Покажи какая версия будет выпущена и какие изменения попадут в CHANGELOG."
+  }
+}
