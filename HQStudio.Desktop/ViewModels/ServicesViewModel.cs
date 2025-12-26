@@ -13,6 +13,7 @@ namespace HQStudio.ViewModels
         private readonly ApiService _apiService = ApiService.Instance;
         private readonly SettingsService _settings = SettingsService.Instance;
         private readonly ApiCacheService _cache = ApiCacheService.Instance;
+        private readonly RecentItemsService _recentItems = RecentItemsService.Instance;
         private const string CacheKey = "services";
         
         private Service? _selectedService;
@@ -273,6 +274,9 @@ namespace HQStudio.ViewModels
         private async void EditServiceAsync()
         {
             if (SelectedService == null) return;
+            
+            // Добавляем в недавние просмотренные
+            _recentItems.AddRecentService(SelectedService.Id, SelectedService.Name, SelectedService.Category);
             
             var dialog = new EditServiceDialog(SelectedService);
             dialog.Owner = Application.Current.MainWindow;

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:HQStudio.ViewModels"
         xmlns:views="clr-namespace:HQStudio.Views"
+        xmlns:controls="clr-namespace:HQStudio.Controls"
         Title="HQ Studio" 
         Height="850" Width="1450"
         MinHeight="650" MinWidth="1100"
@@ -185,6 +186,12 @@
                     </ContentControl.Resources>
                 </ContentControl>
             </Border>
+            
+            <!-- Toast Notifications Container -->
+            <controls:ToastContainer Grid.Row="1" Grid.Column="1" 
+                                     HorizontalAlignment="Right" 
+                                     VerticalAlignment="Bottom"
+                                     Panel.ZIndex="1000"/>
         </Grid>
     </Border>
 </Window>
