@@ -1,3 +1,21 @@
+## [1.16.0](https://github.com/randomu3/hqstudio/compare/v1.15.1...v1.16.0) (2025-12-26)
+
+
+### 🚀 Новые возможности
+
+* **desktop:** добавлен индикатор Caps Lock на экране входа ([42d281a](https://github.com/randomu3/hqstudio/commit/42d281a31bfc3b423d8287905ef26ecc0736a8c6))
+* **desktop:** добавлена история недавно просмотренных элементов ([c15caa4](https://github.com/randomu3/hqstudio/commit/c15caa488c1ff49e05d6e3365e3af367233e3a09))
+* **desktop:** добавлено отслеживание несохранённых изменений в диалогах ([0db0415](https://github.com/randomu3/hqstudio/commit/0db04154f267728ba562055dd752b79d666f559f))
+* **desktop:** добавлены toast-уведомления для обратной связи ([6a5ff0d](https://github.com/randomu3/hqstudio/commit/6a5ff0d9f177f944b7aeb32490d3fe63f2d472af))
+* **desktop:** добавлены глобальные горячие клавиши ([753b602](https://github.com/randomu3/hqstudio/commit/753b60230078c000a412983133907daad02d9302))
+* **desktop:** добавлены системные уведомления Windows ([e1587b2](https://github.com/randomu3/hqstudio/commit/e1587b28945aaea47d74891d81909fef60fea086))
+* **desktop:** кликабельные блоки статистики на Dashboard с навигацией ([376ce93](https://github.com/randomu3/hqstudio/commit/376ce9384fd11282968f3753efbc21b374246cf7))
+
+
+### ♻️ Рефакторинг
+
+* **desktop:** интеграция новых сервисов в MainWindow и ViewModels ([20b65d6](https://github.com/randomu3/hqstudio/commit/20b65d6a9254a897f25545d9738068c04ca1dc73))
+
 ## [1.15.1](https://github.com/randomu3/hqstudio/compare/v1.15.0...v1.15.1) (2025-12-26)
 
 
