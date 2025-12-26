@@ -19,32 +19,34 @@ public class DashboardController : ControllerBase
     public async Task<ActionResult<DashboardStats>> GetStats()
     {
         var today = DateTime.UtcNow.Date;
-        var monthStart = new DateTime(today.Year, today.Month, 1);
+        var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // Завершённые заказы за текущий месяц
-        // Используем CompletedAt если есть, иначе CreatedAt (для старых заказов)
+        // Завершённые заказы за текущий месяц (не удалённые)
         var completedOrders = await _db.Orders
-            .Where(o => o.Status == OrderStatus.Completed &&
-                        ((o.CompletedAt.HasValue && o.CompletedAt >= monthStart) ||
-                         (!o.CompletedAt.HasValue && o.CreatedAt >= monthStart)))
+            .Where(o => !o.IsDeleted &&
+                        o.Status == OrderStatus.Completed &&
+                        o.CompletedAt.HasValue &&
+                        o.CompletedAt >= monthStart)
             .ToListAsync();
 
         var stats = new DashboardStats
         {
             TotalClients = await _db.Clients.CountAsync(),
-            TotalOrders = await _db.Orders.CountAsync(),
+            TotalOrders = await _db.Orders.CountAsync(o => !o.IsDeleted),
             NewCallbacks = await _db.CallbackRequests.CountAsync(c => c.Status == RequestStatus.New),
             MonthlyRevenue = completedOrders.Sum(o => o.TotalPrice),
-            OrdersInProgress = await _db.Orders.CountAsync(o => o.Status == OrderStatus.InProgress),
+            OrdersInProgress = await _db.Orders.CountAsync(o => !o.IsDeleted && o.Status == OrderStatus.InProgress),
             CompletedThisMonth = completedOrders.Count,
             NewSubscribers = await _db.Subscriptions.CountAsync(s => s.CreatedAt >= monthStart),
             PopularServices = await _db.OrderServices
+                .Where(os => !os.Order.IsDeleted)
                 .GroupBy(os => os.Service.Title)
                 .Select(g => new ServiceStat { Name = g.Key, Count = g.Count() })
                 .OrderByDescending(s => s.Count)
                 .Take(5)
                 .ToListAsync(),
             RecentOrders = await _db.Orders
+                .Where(o => !o.IsDeleted)
                 .Include(o => o.Client)
                 .OrderByDescending(o => o.CreatedAt)
                 .Take(5)
