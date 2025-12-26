@@ -1,5 +1,7 @@
 using HQStudio.Models;
+using HQStudio.Services;
 using HQStudio.Utils;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 
@@ -7,6 +9,9 @@ namespace HQStudio.Views.Dialogs
 {
     public partial class EditClientDialog : Window
     {
+        private readonly UnsavedChangesTracker _changesTracker = new();
+        private bool _isLoading = true;
+        
         public Client Client { get; private set; }
         public bool IsNew { get; }
 
@@ -19,7 +24,27 @@ namespace HQStudio.Views.Dialogs
             TitleText.Text = IsNew ? "Новый клиент" : "Редактирование клиента";
             LoadData();
             
-            Loaded += (s, e) => NameBox.Focus();
+            Loaded += (s, e) => 
+            {
+                NameBox.Focus();
+                _isLoading = false;
+            };
+            
+            // Обработка закрытия окна
+            Closing += OnWindowClosing;
+        }
+
+        private void OnWindowClosing(object? sender, CancelEventArgs e)
+        {
+            // Если DialogResult уже установлен (Save или Cancel нажаты), не показываем диалог
+            if (DialogResult.HasValue)
+                return;
+                
+            // Показываем диалог подтверждения если есть несохранённые изменения
+            if (!_changesTracker.ConfirmDiscard(this))
+            {
+                e.Cancel = true;
+            }
         }
 
         private void LoadData()
@@ -39,6 +64,11 @@ namespace HQStudio.Views.Dialogs
         private void CarNumberBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             InputValidation.AllowLicensePlateCharacters(sender, e);
+        }
+
+        private void TextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            if (!_isLoading) _changesTracker.MarkAsChanged();
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)

@@ -38,25 +38,30 @@
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="24,20">
                 <StackPanel>
                     <TextBlock Text="ИМЯ КЛИЕНТА" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
-                    <TextBox x:Name="NameBox" Style="{DynamicResource InputText}" Margin="0,0,0,16" TabIndex="0"/>
+                    <TextBox x:Name="NameBox" Style="{DynamicResource InputText}" Margin="0,0,0,16" TabIndex="0"
+                             TextChanged="TextBox_TextChanged"/>
 
                     <TextBlock Text="ТЕЛЕФОН" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
                     <TextBox x:Name="PhoneBox" Style="{DynamicResource InputText}" Margin="0,0,0,16" 
                              behaviors:PhoneTextBoxBehavior.IsEnabled="True" TabIndex="1"
-                             PreviewTextInput="PhoneBox_PreviewTextInput"/>
+                             PreviewTextInput="PhoneBox_PreviewTextInput"
+                             TextChanged="TextBox_TextChanged"/>
 
                     <TextBlock Text="АВТОМОБИЛЬ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
-                    <TextBox x:Name="CarBox" Style="{DynamicResource InputText}" Margin="0,0,0,16" TabIndex="2"/>
+                    <TextBox x:Name="CarBox" Style="{DynamicResource InputText}" Margin="0,0,0,16" TabIndex="2"
+                             TextChanged="TextBox_TextChanged"/>
 
                     <TextBlock Text="ГОС. НОМЕР" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
                     <TextBox x:Name="CarNumberBox" Style="{DynamicResource InputText}" Margin="0,0,0,16"
                              CharacterCasing="Upper" TabIndex="3"
-                             PreviewTextInput="CarNumberBox_PreviewTextInput"/>
+                             PreviewTextInput="CarNumberBox_PreviewTextInput"
+                             TextChanged="TextBox_TextChanged"/>
 
                     <TextBlock Text="ЗАМЕТКИ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
                     <TextBox x:Name="NotesBox" Style="{DynamicResource InputText}" 
                              TextWrapping="Wrap" AcceptsReturn="True" Height="80"
-                             VerticalContentAlignment="Top" TabIndex="4"/>
+                             VerticalContentAlignment="Top" TabIndex="4"
+                             TextChanged="TextBox_TextChanged"/>
                 </StackPanel>
             </ScrollViewer>
 

@@ -1,5 +1,7 @@
 using HQStudio.Models;
+using HQStudio.Services;
 using HQStudio.Utils;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -8,6 +10,9 @@ namespace HQStudio.Views.Dialogs
 {
     public partial class EditServiceDialog : Window
     {
+        private readonly UnsavedChangesTracker _changesTracker = new();
+        private bool _isLoading = true;
+        
         public Service Service { get; private set; }
         public bool IsNew { get; }
         private string _selectedIcon = "🔧";
@@ -27,7 +32,27 @@ namespace HQStudio.Views.Dialogs
             
             LoadData();
             
-            Loaded += (s, e) => NameBox.Focus();
+            Loaded += (s, e) => 
+            {
+                NameBox.Focus();
+                _isLoading = false;
+            };
+            
+            // Обработка закрытия окна
+            Closing += OnWindowClosing;
+        }
+
+        private void OnWindowClosing(object? sender, CancelEventArgs e)
+        {
+            // Если DialogResult уже установлен (Save или Cancel нажаты), не показываем диалог
+            if (DialogResult.HasValue)
+                return;
+                
+            // Показываем диалог подтверждения если есть несохранённые изменения
+            if (!_changesTracker.ConfirmDiscard(this))
+            {
+                e.Cancel = true;
+            }
         }
 
         private void LoadData()
@@ -61,6 +86,7 @@ namespace HQStudio.Views.Dialogs
                 _iconManuallySelected = true;
                 SelectedIconDisplay.Text = icon;
                 IconPickerPanel.Visibility = Visibility.Collapsed;
+                if (!_isLoading) _changesTracker.MarkAsChanged();
             }
         }
 
@@ -73,6 +99,12 @@ namespace HQStudio.Views.Dialogs
                 _selectedIcon = recommendedIcon;
                 SelectedIconDisplay.Text = recommendedIcon;
             }
+            if (!_isLoading) _changesTracker.MarkAsChanged();
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_isLoading) _changesTracker.MarkAsChanged();
         }
 
         private void PriceBox_PreviewTextInput(object sender, TextCompositionEventArgs e)

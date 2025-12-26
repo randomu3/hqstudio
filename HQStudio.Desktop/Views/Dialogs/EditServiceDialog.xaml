@@ -119,16 +119,19 @@
                              TextChanged="NameBox_TextChanged"/>
 
                     <TextBlock Text="КАТЕГОРИЯ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
-                    <TextBox x:Name="CategoryBox" Style="{DynamicResource InputText}" Margin="0,0,0,16"/>
+                    <TextBox x:Name="CategoryBox" Style="{DynamicResource InputText}" Margin="0,0,0,16"
+                             TextChanged="TextBox_TextChanged"/>
 
                     <TextBlock Text="ЦЕНА ОТ (₽)" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
                     <TextBox x:Name="PriceBox" Style="{DynamicResource InputText}" Margin="0,0,0,16"
-                             PreviewTextInput="PriceBox_PreviewTextInput"/>
+                             PreviewTextInput="PriceBox_PreviewTextInput"
+                             TextChanged="TextBox_TextChanged"/>
 
                     <TextBlock Text="ОПИСАНИЕ" Style="{DynamicResource TextLabel}" Margin="0,0,0,8"/>
                     <TextBox x:Name="DescriptionBox" Style="{DynamicResource InputText}" 
                              TextWrapping="Wrap" AcceptsReturn="True" Height="100"
-                             VerticalContentAlignment="Top"/>
+                             VerticalContentAlignment="Top"
+                             TextChanged="TextBox_TextChanged"/>
                 </StackPanel>
             </ScrollViewer>
 

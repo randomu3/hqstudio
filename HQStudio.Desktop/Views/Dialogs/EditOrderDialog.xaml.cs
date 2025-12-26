@@ -2,6 +2,7 @@ using HQStudio.Models;
 using HQStudio.Services;
 using HQStudio.Utils;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,6 +14,7 @@ namespace HQStudio.Views.Dialogs
         private readonly DataService _dataService = DataService.Instance;
         private readonly ApiService _apiService = ApiService.Instance;
         private readonly SettingsService _settings = SettingsService.Instance;
+        private readonly UnsavedChangesTracker _changesTracker = new();
         
         public Order Order { get; private set; }
         public bool IsNew { get; }
@@ -21,6 +23,7 @@ namespace HQStudio.Views.Dialogs
         private List<Service> _allServices = new();
         private List<Client> _allClients = new();
         private Client? _selectedClient;
+        private bool _isLoading = true;
 
         public EditOrderDialog(Order? order = null)
         {
@@ -33,12 +36,36 @@ namespace HQStudio.Views.Dialogs
             
             SelectedServicesList.ItemsSource = _selectedServices;
             
+            // Подписываемся на изменения в коллекции услуг
+            _selectedServices.CollectionChanged += (s, e) => 
+            {
+                if (!_isLoading) _changesTracker.MarkAsChanged();
+            };
+            
             // Загружаем данные синхронно при открытии
             Loaded += async (s, e) => await LoadDataAsync();
+            
+            // Обработка закрытия окна
+            Closing += OnWindowClosing;
+        }
+
+        private void OnWindowClosing(object? sender, CancelEventArgs e)
+        {
+            // Если DialogResult уже установлен (Save или Cancel нажаты), не показываем диалог
+            if (DialogResult.HasValue)
+                return;
+                
+            // Показываем диалог подтверждения если есть несохранённые изменения
+            if (!_changesTracker.ConfirmDiscard(this))
+            {
+                e.Cancel = true;
+            }
         }
 
         private async Task LoadDataAsync()
         {
+            _isLoading = true;
+            
             // Load clients from API or local
             if (_settings.UseApi && _apiService.IsConnected)
             {
@@ -88,6 +115,8 @@ namespace HQStudio.Views.Dialogs
 
             PriceBox.Text = Order.TotalPrice.ToString();
             NotesBox.Text = Order.Notes;
+            
+            _isLoading = false;
         }
 
         private void ClientSearch_TextChanged(object sender, TextChangedEventArgs e)
@@ -167,6 +196,7 @@ namespace HQStudio.Views.Dialogs
                 ShowSelectedClient(client);
                 ClientSearchBox.Text = "";
                 ClientPopup.IsOpen = false;
+                if (!_isLoading) _changesTracker.MarkAsChanged();
             }
         }
 
@@ -188,6 +218,7 @@ namespace HQStudio.Views.Dialogs
             ClientSearchBox.Text = "";
             ClientSearchPlaceholder.Visibility = Visibility.Visible;
             ClientSearchBox.Focus();
+            if (!_isLoading) _changesTracker.MarkAsChanged();
         }
 
         private void ServiceSearch_TextChanged(object sender, TextChangedEventArgs e)
@@ -265,11 +296,27 @@ namespace HQStudio.Views.Dialogs
         private void AutoPrice_Click(object sender, RoutedEventArgs e)
         {
             UpdateAutoPrice();
+            if (!_isLoading) _changesTracker.MarkAsChanged();
         }
 
         private void PriceBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             InputValidation.AllowDecimalNumbers(sender, e);
+        }
+
+        private void PriceBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_isLoading) _changesTracker.MarkAsChanged();
+        }
+
+        private void NotesBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_isLoading) _changesTracker.MarkAsChanged();
+        }
+
+        private void StatusCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isLoading) _changesTracker.MarkAsChanged();
         }
 
         private void UpdateAutoPrice()
