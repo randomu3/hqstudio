@@ -28,6 +28,22 @@ const nextConfig = {
   
   // Trailing slash для статических файлов
   trailingSlash: process.env.GITHUB_ACTIONS ? true : false,
+  
+  // Разрешаем загрузку в iframe для локальной разработки (Browser in VS Code)
+  async headers() {
+    // Только для development
+    if (process.env.NODE_ENV !== 'development') {
+      return []
+    }
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
