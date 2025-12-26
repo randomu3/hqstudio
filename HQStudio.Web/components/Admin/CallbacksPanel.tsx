@@ -495,18 +495,19 @@ function AddCallbackModal({ onClose, onSave }: { onClose: () => void; onSave: ()
         <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
           <div className="space-y-1">
             <label className="text-[8px] md:text-[9px] uppercase tracking-widest text-neutral-500 ml-2 font-black">Источник *</label>
-            <select
+            <CustomSelect
               value={form.source}
-              onChange={(e) => setForm({ ...form, source: e.target.value as RequestSource })}
-              className="w-full bg-black border border-white/10 p-3 md:p-4 rounded-xl md:rounded-2xl text-white text-sm outline-none focus:border-white/30 transition-all"
-            >
-              <option value="WalkIn">Визит в студию</option>
-              <option value="Phone">Входящий звонок</option>
-              <option value="Email">Электронная почта</option>
-              <option value="Messenger">Мессенджер</option>
-              <option value="Referral">Рекомендация</option>
-              <option value="Other">Другое</option>
-            </select>
+              onChange={(value) => setForm({ ...form, source: value as RequestSource })}
+              placeholder="Выберите источник"
+              options={[
+                { value: 'WalkIn', label: 'Визит в студию' },
+                { value: 'Phone', label: 'Входящий звонок' },
+                { value: 'Email', label: 'Электронная почта' },
+                { value: 'Messenger', label: 'Мессенджер' },
+                { value: 'Referral', label: 'Рекомендация' },
+                { value: 'Other', label: 'Другое' },
+              ]}
+            />
           </div>
 
           <div className="space-y-1">
