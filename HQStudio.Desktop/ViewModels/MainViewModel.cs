@@ -1,3 +1,4 @@
+using HQStudio.Models;
 using HQStudio.Services;
 using System.Reflection;
 using System.Windows.Input;
@@ -56,7 +57,7 @@ namespace HQStudio.ViewModels
             
             try
             {
-                CurrentView = new DashboardViewModel();
+                CurrentView = CreateDashboardViewModel();
             }
             catch (Exception ex)
             {
@@ -69,15 +70,17 @@ namespace HQStudio.ViewModels
         {
             if (parameter is not string viewName) return;
 
-            CurrentViewName = viewName;
+            // Для ActiveOrders используем Orders для подсветки меню
+            CurrentViewName = viewName == "ActiveOrders" ? "Orders" : viewName;
             try
             {
                 CurrentView = viewName switch
                 {
-                    "Dashboard" => new DashboardViewModel(),
+                    "Dashboard" => CreateDashboardViewModel(),
                     "Services" => new ServicesViewModel(),
                     "Clients" => new ClientsViewModel(),
                     "Orders" => CreateOrdersViewModel(),
+                    "ActiveOrders" => CreateOrdersViewModel(filterActive: true),
                     "Callbacks" => CreateCallbacksViewModel(),
                     "Staff" => new StaffViewModel(),
                     "ActivityLog" => new ActivityLogViewModel(),
@@ -92,9 +95,43 @@ namespace HQStudio.ViewModels
             }
         }
 
-        private OrdersViewModel CreateOrdersViewModel()
+        private DashboardViewModel CreateDashboardViewModel()
         {
-            var vm = new OrdersViewModel();
+            var vm = new DashboardViewModel();
+            vm.NavigateToSection += OnNavigateToSection;
+            vm.NavigateToRecentItem += OnNavigateToRecentItem;
+            return vm;
+        }
+
+        private void OnNavigateToSection(string section)
+        {
+            Navigate(section);
+        }
+
+        private void OnNavigateToRecentItem(RecentItem item)
+        {
+            // Навигация к элементу в зависимости от типа
+            switch (item.Type)
+            {
+                case RecentItemType.Client:
+                    Navigate("Clients");
+                    break;
+                case RecentItemType.Order:
+                    if (item.Id > 0)
+                    {
+                        _pendingOrderId = item.Id;
+                    }
+                    Navigate("Orders");
+                    break;
+                case RecentItemType.Service:
+                    Navigate("Services");
+                    break;
+            }
+        }
+
+        private OrdersViewModel CreateOrdersViewModel(bool filterActive = false)
+        {
+            var vm = new OrdersViewModel(filterActive);
             
             // Если есть отложенный заказ для выделения
             if (_pendingOrderId.HasValue)

@@ -51,7 +51,9 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0" Style="{DynamicResource CardHoverable}" Margin="0,0,12,0">
+                <Border Grid.Column="0" Style="{DynamicResource CardHoverable}" Margin="0,0,12,0"
+                        Cursor="Hand" ToolTip="Перейти к списку клиентов"
+                        MouseLeftButtonUp="StatsCard_Clients_Click">
                     <StackPanel>
                         <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource BgIconBrush}" 
                                 HorizontalAlignment="Left" Margin="0,0,0,16">
@@ -63,7 +65,9 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Style="{DynamicResource CardHoverable}" Margin="6,0">
+                <Border Grid.Column="1" Style="{DynamicResource CardHoverable}" Margin="6,0"
+                        Cursor="Hand" ToolTip="Перейти к списку заказов"
+                        MouseLeftButtonUp="StatsCard_Orders_Click">
                     <StackPanel>
                         <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource BgIconBrush}" 
                                 HorizontalAlignment="Left" Margin="0,0,0,16">
@@ -75,7 +79,9 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="2" Style="{DynamicResource CardHoverable}" Margin="6,0">
+                <Border Grid.Column="2" Style="{DynamicResource CardHoverable}" Margin="6,0"
+                        Cursor="Hand" ToolTip="Перейти к активным заказам"
+                        MouseLeftButtonUp="StatsCard_ActiveOrders_Click">
                     <StackPanel>
                         <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource BgIconYellowBrush}" 
                                 HorizontalAlignment="Left" Margin="0,0,0,16">
@@ -87,7 +93,9 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="3" Style="{DynamicResource CardHoverable}" Margin="12,0,0,0">
+                <Border Grid.Column="3" Style="{DynamicResource CardHoverable}" Margin="12,0,0,0"
+                        Cursor="Hand" ToolTip="Перейти к заказам (выручка)"
+                        MouseLeftButtonUp="StatsCard_Revenue_Click">
                     <StackPanel>
                         <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource BgIconGreenBrush}" 
                                 HorizontalAlignment="Left" Margin="0,0,0,16">
@@ -100,6 +108,51 @@
                     </StackPanel>
                 </Border>
             </Grid>
+
+            <!-- Recent Items Section -->
+            <Grid Margin="0,0,0,16" Visibility="{Binding RecentItems.Count, Converter={StaticResource CountToVisibility}, FallbackValue=Collapsed}">
+                <TextBlock Text="🕐 НЕДАВНО ПРОСМОТРЕННЫЕ" Style="{DynamicResource TextLabel}"/>
+                <TextBlock Text="{Binding RecentItems.Count, StringFormat={}{0} элементов}" 
+                           Style="{DynamicResource TextSmall}" HorizontalAlignment="Right"/>
+            </Grid>
+            
+            <Border Style="{DynamicResource Card}" Margin="0,0,0,24" 
+                    Visibility="{Binding RecentItems.Count, Converter={StaticResource CountToVisibility}, FallbackValue=Collapsed}">
+                <ItemsControl ItemsSource="{Binding RecentItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{DynamicResource ButtonTransparent}" 
+                                    Command="{Binding DataContext.NavigateToRecentItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    HorizontalContentAlignment="Stretch"
+                                    Padding="0" Margin="0,4">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="20" 
+                                               Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" FontSize="14" 
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{Binding Subtitle}" FontSize="12" 
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Visibility="{Binding Subtitle, Converter={StaticResource StringToVisibility}}"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="2" Background="{DynamicResource BgHoverBrush}" 
+                                            CornerRadius="6" Padding="10,4" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding TypeName}" FontSize="12" 
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </Border>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
 
             <!-- Revenue Chart Section -->
             <Grid Margin="0,0,0,16">

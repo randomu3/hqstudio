@@ -14,6 +14,7 @@ namespace HQStudio.ViewModels
         private readonly SettingsService _settings = SettingsService.Instance;
         private readonly DataSyncService _syncService = DataSyncService.Instance;
         private readonly ApiCacheService _cache = ApiCacheService.Instance;
+        private readonly RecentItemsService _recentItems = RecentItemsService.Instance;
         private const string CacheKeyPrefix = "orders";
         
         private static bool _isInitialized;
@@ -129,8 +130,16 @@ namespace HQStudio.ViewModels
         
         public List<string> StatusOptions { get; } = new() { "Все", "Новый", "В работе", "Завершен", "Отменен" };
 
-        public OrdersViewModel()
+        public OrdersViewModel() : this(filterActive: false)
         {
+        }
+
+        private bool _filterActiveOnly;
+
+        public OrdersViewModel(bool filterActive)
+        {
+            _filterActiveOnly = filterActive;
+            
             AddOrderCommand = new RelayCommand(_ => AddOrder());
             EditOrderCommand = new RelayCommand(_ => EditOrder(), _ => SelectedOrder != null);
             CompleteOrderCommand = new RelayCommand(_ => CompleteOrder());
@@ -149,15 +158,123 @@ namespace HQStudio.ViewModels
             // Подписываемся на автообновление
             _syncService.OrdersChanged += OnOrdersChanged;
             
-            // Восстанавливаем кэшированную страницу
-            CurrentPage = _cachedPage;
-            TotalPages = _cachedTotalPages;
-            TotalOrders = _cachedTotal;
+            // Восстанавливаем кэшированную страницу только если не фильтруем
+            if (!filterActive)
+            {
+                CurrentPage = _cachedPage;
+                TotalPages = _cachedTotalPages;
+                TotalOrders = _cachedTotal;
+            }
             
-            // Загружаем только если ещё не загружали
-            if (!_isInitialized || Orders.Count == 0)
+            // Загружаем заказы
+            if (filterActive)
+            {
+                // Для фильтрации активных - загружаем только активные (не завершённые)
+                _ = LoadActiveOrdersAsync();
+            }
+            else if (!_isInitialized || Orders.Count == 0)
             {
                 _ = LoadOrdersAsync();
+            }
+        }
+
+        /// <summary>
+        /// Загрузка только активных заказов (Новый, В работе)
+        /// </summary>
+        private async Task LoadActiveOrdersAsync()
+        {
+            if (IsLoading) return;
+            IsLoading = true;
+            OnPropertyChanged(nameof(CanGoPrevious));
+            OnPropertyChanged(nameof(CanGoNext));
+            
+            try
+            {
+                Orders.Clear();
+                
+                if (_settings.UseApi && _apiService.IsConnected)
+                {
+                    IsApiConnected = true;
+                    
+                    // Получаем все заказы и фильтруем активные
+                    var allOrders = new List<Order>();
+                    var page = 1;
+                    const int pageSize = 100;
+                    
+                    while (true)
+                    {
+                        var response = await _apiService.GetOrdersAsync(page, pageSize);
+                        if (response == null || !response.Items.Any()) break;
+                        
+                        foreach (var apiOrder in response.Items)
+                        {
+                            var status = MapStatus(apiOrder.Status);
+                            // Только активные заказы (не Завершен и не Отменен)
+                            if (status != "Завершен" && status != "Отменен")
+                            {
+                                allOrders.Add(new Order
+                                {
+                                    Id = apiOrder.Id,
+                                    ClientId = apiOrder.ClientId,
+                                    ClientName = apiOrder.Client?.Name ?? string.Empty,
+                                    Client = apiOrder.Client != null ? new Client
+                                    {
+                                        Id = apiOrder.Client.Id,
+                                        Name = apiOrder.Client.Name,
+                                        Phone = apiOrder.Client.Phone,
+                                        Car = apiOrder.Client.CarModel ?? string.Empty,
+                                        CarNumber = apiOrder.Client.LicensePlate ?? string.Empty
+                                    } : null,
+                                    Status = status,
+                                    TotalPrice = apiOrder.TotalPrice,
+                                    Notes = apiOrder.Notes ?? string.Empty,
+                                    CreatedAt = apiOrder.CreatedAt,
+                                    CompletedAt = apiOrder.CompletedAt
+                                });
+                            }
+                        }
+                        
+                        if (response.Items.Count < pageSize) break;
+                        page++;
+                    }
+                    
+                    var orderedList = allOrders.OrderByDescending(o => o.CreatedAt).ToList();
+                    TotalOrders = orderedList.Count;
+                    TotalPages = Math.Max(1, (int)Math.Ceiling(orderedList.Count / (double)PageSize));
+                    
+                    foreach (var order in orderedList.Skip((CurrentPage - 1) * PageSize).Take(PageSize))
+                    {
+                        Orders.Add(order);
+                    }
+                }
+                else
+                {
+                    IsApiConnected = true;
+                    var activeOrders = _dataService.Orders
+                        .Where(o => o.Status != "Завершен" && o.Status != "Отменен")
+                        .OrderByDescending(o => o.CreatedAt)
+                        .ToList();
+                    
+                    TotalOrders = activeOrders.Count;
+                    TotalPages = Math.Max(1, (int)Math.Ceiling(activeOrders.Count / (double)PageSize));
+                    
+                    foreach (var order in activeOrders.Skip((CurrentPage - 1) * PageSize).Take(PageSize))
+                    {
+                        Orders.Add(order);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading active orders: {ex.Message}");
+                IsApiConnected = false;
+            }
+            finally
+            {
+                IsLoading = false;
+                OnPropertyChanged(nameof(CanGoPrevious));
+                OnPropertyChanged(nameof(CanGoNext));
+                OnPropertyChanged(nameof(ShowEmptyState));
             }
         }
 
@@ -451,6 +568,9 @@ namespace HQStudio.ViewModels
         {
             var orderToEdit = order ?? SelectedOrder;
             if (orderToEdit == null) return;
+            
+            // Добавляем в недавние просмотренные
+            _recentItems.AddRecentOrder(orderToEdit.Id, orderToEdit.ClientDisplay, orderToEdit.Status);
             
             var dialog = new EditOrderDialog(orderToEdit);
             dialog.Owner = Application.Current.MainWindow;

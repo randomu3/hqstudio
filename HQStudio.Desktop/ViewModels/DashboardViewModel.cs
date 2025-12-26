@@ -14,9 +14,15 @@ namespace HQStudio.ViewModels
         private readonly DataService _dataService = DataService.Instance;
         private readonly ApiService _apiService = ApiService.Instance;
         private readonly SettingsService _settings = SettingsService.Instance;
+        private readonly RecentItemsService _recentItemsService = RecentItemsService.Instance;
 
         public ObservableCollection<Service> FeaturedServices { get; } = new();
         public ObservableCollection<ServiceStatistic> ServiceStatistics { get; } = new();
+
+        /// <summary>
+        /// Коллекция недавно просмотренных элементов
+        /// </summary>
+        public ObservableCollection<RecentItem> RecentItems => _recentItemsService.RecentItems;
 
         private int _totalClients;
         private int _totalOrders;
@@ -84,12 +90,40 @@ namespace HQStudio.ViewModels
 
         public ICommand GenerateWeeklyReportCommand { get; }
         public ICommand GenerateMonthlyReportCommand { get; }
+        public ICommand NavigateToRecentItemCommand { get; }
+        public ICommand NavigateToClientsCommand { get; }
+        public ICommand NavigateToOrdersCommand { get; }
+        public ICommand NavigateToActiveOrdersCommand { get; }
+        public ICommand NavigateToRevenueCommand { get; }
+
+        /// <summary>
+        /// Событие для навигации к элементу (обрабатывается MainWindow)
+        /// </summary>
+        public event Action<RecentItem>? NavigateToRecentItem;
+
+        /// <summary>
+        /// Событие для навигации к разделу
+        /// </summary>
+        public event Action<string>? NavigateToSection;
 
         public DashboardViewModel()
         {
             GenerateWeeklyReportCommand = new RelayCommand(_ => GenerateWeeklyReport());
             GenerateMonthlyReportCommand = new RelayCommand(_ => GenerateMonthlyReport());
+            NavigateToRecentItemCommand = new RelayCommand(OnNavigateToRecentItem);
+            NavigateToClientsCommand = new RelayCommand(_ => NavigateToSection?.Invoke("Clients"));
+            NavigateToOrdersCommand = new RelayCommand(_ => NavigateToSection?.Invoke("Orders"));
+            NavigateToActiveOrdersCommand = new RelayCommand(_ => NavigateToSection?.Invoke("ActiveOrders"));
+            NavigateToRevenueCommand = new RelayCommand(_ => NavigateToSection?.Invoke("Orders"));
             LoadData();
+        }
+
+        private void OnNavigateToRecentItem(object? parameter)
+        {
+            if (parameter is RecentItem item)
+            {
+                NavigateToRecentItem?.Invoke(item);
+            }
         }
 
         private async void LoadData()
