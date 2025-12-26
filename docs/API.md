@@ -1,5 +1,7 @@
 # HQ Studio API Documentation
 
+[![en](https://img.shields.io/badge/lang-en-blue.svg)](API.md) [![ru](https://img.shields.io/badge/lang-ru-red.svg)](API.ru.md)
+
 ## Overview
 
 REST API for the HQ Studio CRM system. Base URL: `http://localhost:5000/api`

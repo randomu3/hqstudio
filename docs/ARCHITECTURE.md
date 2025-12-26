@@ -1,5 +1,7 @@
 # HQ Studio Architecture
 
+[![en](https://img.shields.io/badge/lang-en-blue.svg)](ARCHITECTURE.md) [![ru](https://img.shields.io/badge/lang-ru-red.svg)](ARCHITECTURE.ru.md)
+
 ## System Overview
 
 ```

@@ -1,5 +1,7 @@
 # Git Integration & CI/CD
 
+[![en](https://img.shields.io/badge/lang-en-blue.svg)](GIT-INTEGRATION.md) [![ru](https://img.shields.io/badge/lang-ru-red.svg)](GIT-INTEGRATION.ru.md)
+
 Complete documentation on Git integration, automation, and CI/CD pipelines for the HQ Studio project.
 
 ## Table of Contents
