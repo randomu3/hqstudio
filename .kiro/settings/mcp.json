@@ -10,7 +10,11 @@
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
       },
       "disabled": false,
-      "autoApprove": []
+      "autoApprove": [
+        "list_commits",
+        "list_issues",
+        "get_file_contents"
+      ]
     },
     "postgres": {
       "command": "npx",
@@ -20,7 +24,9 @@
         "${POSTGRES_CONNECTION_STRING}"
       ],
       "disabled": false,
-      "autoApprove": []
+      "autoApprove": [
+        "query"
+      ]
     },
     "fetch": {
       "command": "uvx",
@@ -28,7 +34,9 @@
         "mcp-server-fetch"
       ],
       "disabled": false,
-      "autoApprove": []
+      "autoApprove": [
+        "fetch"
+      ]
     },
     "docker": {
       "command": "uvx",
@@ -38,7 +46,9 @@
       "disabled": false,
       "autoApprove": [
         "list_containers",
-        "start_container"
+        "list_images",
+        "start_container",
+        "stop_container"
       ]
     },
     "filesystem": {
@@ -47,6 +57,43 @@
         "-y",
         "@modelcontextprotocol/server-filesystem",
         "."
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "read_file",
+        "list_directory"
+      ]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "puppeteer_navigate",
+        "puppeteer_screenshot"
+      ]
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "create_entities",
+        "read_graph",
+        "search_nodes"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
       ],
       "disabled": false,
       "autoApprove": []
