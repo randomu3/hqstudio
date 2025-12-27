@@ -1,3 +1,10 @@
+## [1.19.5](https://github.com/randomu3/hqstudio/compare/v1.19.4...v1.19.5) (2025-12-27)
+
+
+### Bug Fixes
+
+* **web:** fix TypeScript error in lucide-icons test ([ac95583](https://github.com/randomu3/hqstudio/commit/ac95583cd55b16f07dbb10d1769dedc16604c149))
+
 ## [1.19.4](https://github.com/randomu3/hqstudio/compare/v1.19.3...v1.19.4) (2025-12-27)
 
 
