@@ -19,14 +19,14 @@ public class DashboardController : ControllerBase
     public async Task<ActionResult<DashboardStats>> GetStats()
     {
         var today = DateTime.UtcNow.Date;
-        var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var monthStart = new DateTime(today.Year, today.Month, 1);
 
-        // Завершённые заказы за текущий месяц (не удалённые)
+        // Completed orders for current month (not deleted)
         var completedOrders = await _db.Orders
             .Where(o => !o.IsDeleted &&
                         o.Status == OrderStatus.Completed &&
                         o.CompletedAt.HasValue &&
-                        o.CompletedAt >= monthStart)
+                        o.CompletedAt.Value >= monthStart)
             .ToListAsync();
 
         var stats = new DashboardStats
