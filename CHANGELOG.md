@@ -1,3 +1,10 @@
+## [1.19.1](https://github.com/randomu3/hqstudio/compare/v1.19.0...v1.19.1) (2025-12-27)
+
+
+### Bug Fixes
+
+* **api:** fix monthly revenue calculation date comparison ([e30893d](https://github.com/randomu3/hqstudio/commit/e30893da9a0f8f5de13c98ea0ca7c7308627fbd1))
+
 ## [1.19.0](https://github.com/randomu3/hqstudio/compare/v1.18.1...v1.19.0) (2025-12-26)
 
 
