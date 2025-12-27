@@ -444,9 +444,12 @@ namespace HQStudio.Services
         {
             try
             {
-                return await _http.GetFromJsonAsync<DashboardStats>("/api/dashboard");
+                return await _http.GetFromJsonAsync<DashboardStats>("/api/dashboard", _jsonOptions);
             }
-            catch { return null; }
+            catch
+            {
+                return null;
+            }
         }
 
         // Check connection
@@ -905,7 +908,7 @@ namespace HQStudio.Services
     {
         public int Id { get; set; }
         public string ClientName { get; set; } = "";
-        public string Status { get; set; } = "";
+        public int Status { get; set; }
         public decimal TotalPrice { get; set; }
         public DateTime CreatedAt { get; set; }
     }
