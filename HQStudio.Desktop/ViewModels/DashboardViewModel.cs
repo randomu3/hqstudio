@@ -168,7 +168,9 @@ namespace HQStudio.ViewModels
                             Name = svc.Title,
                             Description = svc.Description,
                             Icon = svc.Icon,
-                            IsActive = svc.IsActive
+                            IsActive = svc.IsActive,
+                            PriceFrom = ParsePrice(svc.Price),
+                            Category = svc.Category
                         });
                     }
                     
@@ -293,6 +295,21 @@ namespace HQStudio.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"LoadRevenueChart error: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Парсит строку цены из API (например "от 15 000 ₽") в decimal
+        /// </summary>
+        private static decimal ParsePrice(string? priceStr)
+        {
+            if (string.IsNullOrWhiteSpace(priceStr)) return 0;
+            
+            // Убираем всё кроме цифр и точки/запятой
+            var digits = new string(priceStr.Where(c => char.IsDigit(c) || c == '.' || c == ',').ToArray());
+            digits = digits.Replace(',', '.');
+            
+            return decimal.TryParse(digits, System.Globalization.NumberStyles.Any, 
+                System.Globalization.CultureInfo.InvariantCulture, out var result) ? result : 0;
         }
 
         private void GenerateWeeklyReport()
