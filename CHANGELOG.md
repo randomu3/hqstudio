@@ -1,3 +1,10 @@
+## [1.19.6](https://github.com/randomu3/hqstudio/compare/v1.19.5...v1.19.6) (2025-12-31)
+
+
+### Refactoring
+
+* **api:** complete API architecture refactoring ([63dfc38](https://github.com/randomu3/hqstudio/commit/63dfc3816119a6f41a2ffe6b3771ee93beb4e3e5))
+
 ## [1.19.5](https://github.com/randomu3/hqstudio/compare/v1.19.4...v1.19.5) (2025-12-27)
 
 
